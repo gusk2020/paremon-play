@@ -376,3 +376,41 @@ test('pictures: all 5 species x 7 states (35) render in the game with no 404 and
   assert.equal(seen.size, 35); assert.deepEqual(failed, []); assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+// ---------------- KD-8: no clipped text on cards; card geometry unchanged ----------------
+const KD8_VIEWPORTS = [['360', { width: 360, height: 740 }, { slot: [92, 144], hand: [62.4, 98], field: 198 }], ['393 (Pixel 7a-like)', { width: 393, height: 851 }, { slot: [96, 144], hand: [69, 98], field: 198 }],
+  ['412', { width: 412, height: 892 }, { slot: [96, 144], hand: [72.8, 98], field: 198 }], ['desktop 1280', { width: 1280, height: 900 }, { slot: [112, 168], hand: [132, 120], field: 225 }]];
+for (const [name, viewport, geo] of KD8_VIEWPORTS) {
+  test(`KD-8 (${name}): species name, HP, energy line and labels are never clipped or overlapping on board and hand cards, for all 5 species`, async () => {
+    const { ctx, page, errors } = await openGame(browser, { seed: 3, viewport });
+    const bad = [];
+    for (const sp of ['centipede', 'dragon', 'golem', 'knight', 'skeleton']) {
+      await setup(page, { me: { active: { e: [0, 1], sp }, bench: [{ e: [], sp }, { e: [2], sp }], hand: [{ kind: 'mon' }, { kind: 'mon' }, { kind: 'en', color: 1 }, { kind: 'tune', color: 0 }, { kind: 'boost', color: 1 }] }, ai: { active: { e: [1], sp }, bench: [{ e: [], sp }] }, turn: 'player', step: 1 });
+      await page.waitForFunction(() => [...document.images].every(i => i.complete));
+      const r = await page.evaluate(sp => { const out = [];
+        const cards = [...document.querySelectorAll('#enemySlots .bcard,#playerSlots .bcard'), ...document.querySelectorAll('#hand .hand-card')];
+        for (const card of cards) { const box = card.getBoundingClientRect(); let prevBottom = -1;
+          const lines = [...card.children].filter(e => !e.classList.contains('monster-art-panel') && !e.classList.contains('swatch'));
+          for (const el of lines) { const r = el.getBoundingClientRect(), cs = getComputedStyle(el), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+            const what = `${sp} ${card.className.split(' ')[0]} ${el.className || el.tagName}`;
+            if (r.height + 0.6 < lh) out.push(`${what}: box ${r.height.toFixed(1)}px < line ${lh.toFixed(1)}px (clipped)`);
+            if (el.scrollHeight > el.clientHeight + 1) out.push(`${what}: content taller than its box`);
+            if (r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5) out.push(`${what}: outside the card`);
+            if (prevBottom > r.top + 0.5) out.push(`${what}: overlaps the line above`); prevBottom = r.bottom; }
+          const art = card.querySelector('.monster-art-panel'); if (art) { const a = art.getBoundingClientRect(), im = art.querySelector('img').getBoundingClientRect();
+            if (a.height < 38) out.push(`${sp}: picture panel only ${a.height.toFixed(0)}px tall`); if (im.height > a.height + 0.5 || im.width > a.width + 0.5) out.push(`${sp}: picture overflows its panel`); } }
+        return out; }, sp);
+      bad.push(...r);
+    }
+    assert.deepEqual([...new Set(bad)], []); assert.deepEqual(errors, []);
+    await ctx.close();
+  });
+  test(`KD-8 (${name}): card, slot, hand and field sizes are exactly the pre-fix values (the fix must not move anything)`, async () => {
+    const { ctx, page } = await openGame(browser, { seed: 3, viewport });
+    await setup(page, { me: { active: { e: [0], sp: 'centipede' }, bench: [{ e: [], sp: 'golem' }], hand: [{ kind: 'mon' }, { kind: 'en', color: 1 }] }, ai: { active: { e: [1], sp: 'dragon' }, bench: [] }, turn: 'player', step: 1 });
+    const g = await page.evaluate(() => { const R = e => { const r = e.getBoundingClientRect(); return [+r.width.toFixed(1), +r.height.toFixed(1)]; };
+      const front = document.querySelector('#playerSlots [data-slot="player:1"]'), fc = front.querySelector('.bcard'); return { slot: R(front), card: R(fc), hand: R(document.querySelector('#hand button')), field: R(document.querySelector('.field'))[1], lift: +(fc.getBoundingClientRect().top - front.getBoundingClientRect().top).toFixed(1) }; });
+    assert.deepEqual(g.slot, geo.slot); assert.deepEqual(g.card, geo.slot); assert.deepEqual(g.hand, geo.hand); assert.equal(g.field, geo.field); assert.equal(g.lift, -46, 'the front card keeps its 46px lift');
+    await ctx.close();
+  });
+}

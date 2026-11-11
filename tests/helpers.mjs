@@ -5,7 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const HTML = path.join(ROOT, 'paremon_crossplatform_v17.html');
+// PAREMON_HTML lets the same suites run against the index.html extracted from the playtest ZIP
+export const HTML = process.env.PAREMON_HTML ? path.resolve(process.env.PAREMON_HTML) : path.join(ROOT, 'paremon_crossplatform_v17.html');
 export const MOBILE = { width: 412, height: 892 }; // Pixel 7a-class viewport (emulation only, not a real device)
 export const DESKTOP = { width: 1280, height: 900 };
 

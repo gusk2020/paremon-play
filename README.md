@@ -20,6 +20,9 @@ Pixel 7a 実機での動作は **未確認** です（下記テストはPCのChr
 | [assets/originals/](assets/originals/) | 旧い手作業の切り抜き（比較用、削除しない） |
 | [.claude/skills/game-development/SKILL.md](.claude/skills/game-development/SKILL.md) | ゲーム開発スキル v4.0（正本のコピー、無改変） |
 
+## 試遊版（非公開）
+PRのCIが、テスト成功後に試遊用の成果物 `paremon-playtest-<短いSHA>`（`index.html`＋ロゴ＋画像35枚＋`PLAYTEST.txt`）を作ります。Privateリポジトリ内、14日保存。PRの「Checks」→ CI → **Artifacts** から取得し、展開して `index.html` を Chrome で開きます（詳細は [docs/STATUS.md](docs/STATUS.md)）。公開や外部ホスティングはしていません。
+
 ## テスト
 ```
 npm ci

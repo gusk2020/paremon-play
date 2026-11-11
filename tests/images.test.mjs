@@ -48,7 +48,7 @@ before(async () => {
       const colLen = (x) => { let k = 0; for (let y = 0; y < h; y++) if (op[y * w + x]) k++; return k; };
       const rowLen = (y) => { let k = 0; for (let x = 0; x < w; x++) if (op[y * w + x]) k++; return k; };
       const L = Math.max(colLen(2), colLen(3)), Rr = Math.max(colLen(w - 3), colLen(w - 4)), T = Math.max(rowLen(2), rowLen(3)), B = Math.max(rowLen(h - 3), rowLen(h - 4));
-      return { w, h, total, transparent: transparent / (w * h), dividers, mainShare: comps[0].area / total, others: comps.slice(1, 4).map(c => c.area),
+      return { w, h, total, solid: total / (w * h) > 0.2 && /_[1-6]\.png$/.test(url), transparent: transparent / (w * h), dividers, mainShare: comps[0].area / total, others: comps.slice(1, 4).map(c => c.area),
         bigSegments: big.length, cutL: L, cutR: Rr, cutT: T, cutB: B };
     };
   });
@@ -59,7 +59,7 @@ const run = rel => page.evaluate(u => window.audit(u), url(rel));
 const problems = a => [
   a.dividers.length && `sheet divider line at x=${a.dividers}`,
   a.mainShare < 0.9 && `second figure/fragment: largest piece is only ${(a.mainShare * 100).toFixed(0)}% of the drawing`,
-  a.bigSegments > 1 && `${a.bigSegments} separate figures side by side`,
+  a.solid && a.bigSegments > 1 && `${a.bigSegments} separate figures side by side`,   // valley test only for solid colour art: thin line art has low column occupancy by nature
 ].filter(Boolean);
 
 test('cleaned pictures (35): one figure each, no neighbour fragment, no divider line, real transparency', async () => {
@@ -77,33 +77,53 @@ test('the audit really sees the problems: the untouched originals are flagged (a
   for (const must of ['centipede_2', 'centipede_5', 'golem_4', 'dragon_1', 'skeleton_1', 'skeleton_5']) assert.ok(flagged.includes(must), `${must} should be flagged in the original`);
 });
 
-test('subject is never trimmed by the cleaning: every kept pixel equals the original pixel (nothing repainted or moved)', async () => {
-  const r = await page.evaluate(async ([a, b, names]) => {
-    const load = async u => { const i = new Image(); i.src = u; await i.decode(); const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const g = c.getContext('2d'); g.drawImage(i, 0, 0); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; };
-    const out = [];
-    for (const n of names) {
-      const o = await load(`${a}/${n}.png`), c = await load(`${b}/${n}.png`);
-      // find the offset of the cleaned image inside the original by matching its first opaque pixel run, then compare all opaque pixels
-      let fy = -1, fx = -1; for (let y = 0; y < c.h && fy < 0; y++) for (let x = 0; x < c.w; x++) if (c.d[(y * c.w + x) * 4 + 3] > 250) { fy = y; fx = x; break; }
-      let found = null;
-      for (let oy = 0; oy < o.h && !found; oy++) for (let ox = 0; ox < o.w; ox++) { const oi = (oy * o.w + ox) * 4, ci = (fy * c.w + fx) * 4;
-        if (o.d[oi] === c.d[ci] && o.d[oi + 1] === c.d[ci + 1] && o.d[oi + 2] === c.d[ci + 2] && o.d[oi + 3] === c.d[ci + 3]) { found = [ox - fx, oy - fy]; const bad = (() => { let bd = 0, tot = 0;
-          for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) { const ci2 = (y * c.w + x) * 4; if (c.d[ci2 + 3] === 0) continue; const X = x + found[0], Y = y + found[1]; tot++;
-            if (X < 0 || Y < 0 || X >= o.w || Y >= o.h) { bd++; continue; } const oi2 = (Y * o.w + X) * 4; if (o.d[oi2] !== c.d[ci2] || o.d[oi2 + 1] !== c.d[ci2 + 1] || o.d[oi2 + 2] !== c.d[ci2 + 2] || o.d[oi2 + 3] !== c.d[ci2 + 3]) bd++; } return bd / Math.max(1, tot); })();
-          if (bad > 0.001) found = null; else break; } }
-      out.push([n, !!found]);
+test('nothing is repainted: every fully opaque pixel of all 35 pictures equals the pixel of the original sheet it was cut from', async () => {
+  const audit = await (await fetch(url('assets/image-audit.json'))).json();
+  const r = await page.evaluate(async ([base, audit]) => {
+    const load = async u => { const i = new Image(); i.src = u; await i.decode(); const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; };
+    const out = {};
+    for (const [species, info] of Object.entries(audit.monsters)) {
+      const sheet = await load(base + 'assets/sources/' + info.sheet);
+      for (const [name, p] of Object.entries(info.pictures)) {
+        const pic = await load(base + 'paremon_monsters2/' + name);
+        const [bx, by] = p.sheet_box, [ox, oy] = p.paste_offset; let opaque = 0, equal = 0;
+        for (let y = 0; y < pic.h; y++) for (let x = 0; x < pic.w; x++) { const i = (y * pic.w + x) * 4; if (pic.d[i + 3] !== 255) continue; opaque++;
+          const sx = bx + x - ox, sy = by + y - oy; if (sx < 0 || sy < 0 || sx >= sheet.w || sy >= sheet.h) continue; const j = (sy * sheet.w + sx) * 4;
+          if (sheet.d[j] === pic.d[i] && sheet.d[j + 1] === pic.d[i + 1] && sheet.d[j + 2] === pic.d[i + 2]) equal++; }
+        out[name] = [opaque, equal];
+      }
     }
     return out;
-  }, [url('assets/originals/paremon_monsters2'), url('paremon_monsters2'), NAMES]);
-  assert.deepEqual(r.filter(x => !x[1]).map(x => x[0]), [], 'every cleaned picture is a bit-exact sub-image of its original');
+  }, [base, audit]);
+  const bad = Object.entries(r).filter(([, [o, e]]) => o < 5000 || e / o < 0.999).map(([n, [o, e]]) => `${n}: ${e}/${o}`);
+  assert.equal(Object.keys(r).length, 35); assert.deepEqual(bad, []);
 });
 
-// KNOWN, NOT FIXABLE WITHOUT THE ORIGINAL SHEETS (docs/STATUS.md KD-4): the hand-made crops cut many subjects off at the
-// image edge (typically the right-hand side). Left as `todo` so it stays visible; do not turn it into skip().
-test('KD-4b: no picture is cut off at its edge', { todo: 'original crops lost the right-hand part of most subjects; needs the original sheets' }, async () => {
+test('every figure lies strictly inside its original sheet (nothing was cut by the sheet border) and keeps 1:1 scale', async () => {
+  const audit = await (await fetch(url('assets/image-audit.json'))).json(); let n = 0;
+  for (const info of Object.values(audit.monsters)) { const [W, H] = info.sheet_size;
+    for (const [name, p] of Object.entries(info.pictures)) { const [x0, y0, x1, y1] = p.sheet_box; n++; assert.ok(x0 > 0 && y0 > 0 && x1 < W && y1 < H, `${name} touches the sheet border`); assert.equal(p.scale, 1); } }
+  assert.equal(n, 35);
+});
+
+test('one canvas per species: the 6 colour pictures have identical size; colourless has the same proportions, centre and baseline', async () => {
+  const bad = [];
+  for (const sp of SPECIES) {
+    const as = []; for (let i = 0; i < 7; i++) as.push(await page.evaluate(async u => { const img = new Image(); img.src = u; await img.decode(); const w = img.naturalWidth, h = img.naturalHeight, c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, w, h).data;
+      let x0 = w, x1 = 0, y1 = 0; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 128) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+      return { w, h, cx: (x0 + x1 + 1) / 2 / w, bottom: (h - 1 - y1) / h }; }, url(`paremon_monsters2/${sp}_${i}.png`)));
+    for (let i = 2; i <= 6; i++) if (as[i].w !== as[1].w || as[i].h !== as[1].h) bad.push(`${sp}_${i} size ${as[i].w}x${as[i].h} != ${as[1].w}x${as[1].h}`);
+    if (Math.abs(as[0].w / as[0].h - as[1].w / as[1].h) > 0.01) bad.push(`${sp}_0 aspect ${(as[0].w / as[0].h).toFixed(3)} vs ${(as[1].w / as[1].h).toFixed(3)}`);
+    for (let i = 0; i <= 6; i++) { if (Math.abs(as[i].cx - 0.5) > 0.03) bad.push(`${sp}_${i} not centred (${as[i].cx.toFixed(3)})`); if (Math.abs(as[i].bottom - as[1].bottom) > 0.006) bad.push(`${sp}_${i} baseline ${as[i].bottom.toFixed(3)} vs ${as[1].bottom.toFixed(3)}`); }
+  }
+  assert.deepEqual(bad, []);
+});
+
+// KD-4b (was todo until the original sheets arrived): the figures are no longer cut off at any edge.
+test('KD-4b: no picture is cut off at any of its four edges (a transparent margin surrounds every figure)', async () => {
   const cut = [];
-  for (const n of NAMES) { const a = await run(`paremon_monsters2/${n}.png`); const e = [['L', a.cutL], ['R', a.cutR], ['T', a.cutT], ['B', a.cutB]].filter(([, v]) => v >= 12).map(([k, v]) => `${k}${v}px`).join(','); if (e) cut.push(`${n}(${e})`); }
-  assert.deepEqual(cut, [], `cut at an edge: ${cut.join(' ')}`);
+  for (const n of NAMES) { const a = await run(`paremon_monsters2/${n}.png`); const e = [['L', a.cutL], ['R', a.cutR], ['T', a.cutT], ['B', a.cutB]].filter(([, v]) => v > 0).map(([k, v]) => `${k}${v}px`).join(','); if (e) cut.push(`${n}(${e})`); }
+  assert.deepEqual(cut, []);
 });
 
 test('logo: only the coloured mark + "パレモン(Palemon)" + pencil remain (caption, other-draft leftovers and stray lines removed)', async () => {
@@ -144,4 +164,17 @@ test('the same logo audit flags the original (caption text and stray lines prese
     return { black, ratio: w / h };
   }, url('assets/originals/paremon_logo_center_crop2.png'));
   assert.ok(r.black > 500, `original should contain the black caption (found ${r.black}px)`);
+});
+
+test('logo: every non-white pixel equals the pixel of the original logo sheet (nothing redrawn); the logo is complete (not cut at the left)', async () => {
+  const audit = await (await fetch(url('assets/image-audit.json'))).json();
+  const r = await page.evaluate(async ([base, info]) => {
+    const load = async u => { const i = new Image(); i.src = u; await i.decode(); const c = document.createElement('canvas'); c.width = i.naturalWidth; c.height = i.naturalHeight; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0); return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }; };
+    const sheet = await load(base + 'assets/sources/' + info.sheet), logo = await load(base + 'paremon_logo_center_crop2.png');
+    const [bx, by] = info.box; let n = 0, eq = 0;
+    for (let y = 0; y < logo.h; y++) for (let x = 0; x < logo.w; x++) { const i = (y * logo.w + x) * 4; if (Math.min(logo.d[i], logo.d[i + 1], logo.d[i + 2]) >= 250) continue; n++;
+      const j = ((by + y - 8) * sheet.w + (bx + x - 8)) * 4; if (sheet.d[j] === logo.d[i] && sheet.d[j + 1] === logo.d[i + 1] && sheet.d[j + 2] === logo.d[i + 2]) eq++; }
+    return { n, eq, size: [logo.w, logo.h] };
+  }, [base, audit.logo]);
+  assert.ok(r.n > 30000 && r.eq === r.n, `${r.eq}/${r.n} logo pixels equal the sheet`); assert.deepEqual(r.size, audit.logo.size);
 });

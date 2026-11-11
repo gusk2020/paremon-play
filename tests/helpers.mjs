@@ -32,7 +32,7 @@ export async function openGame(browser, { seed = 1, viewport = MOBILE, touch = f
 // side spec: { active: {e:[colors], d:damage}|null, bench:[{e,d}], hand:[{kind,color}] }
 export async function setup(page, cfg) {
   await page.evaluate(cfg => {
-    const build = s => s ? Object.assign(mon({ id: ++uid, species: 'knight' }), { energy: [...(s.e || [])], damage: s.d || 0 }) : null;
+    const build = s => s ? Object.assign(mon({ id: ++uid, species: s.sp || 'knight' }), { energy: [...(s.e || [])], damage: s.d || 0 }) : null;
     for (const side of ['me', 'ai']) {
       const s = cfg[side]; if (!s) continue;
       const p = game[side];

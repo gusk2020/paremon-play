@@ -28,7 +28,7 @@ test('35 monster images exist: 5 species x (colourless + 6 colours), each a real
     const b = fs.readFileSync(f);
     assert.equal(b.subarray(1, 4).toString(), 'PNG', f);
     const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-    // Pictures were cleaned of neighbour fragments (tools/clean_assets.py), so real sizes differ; this only rejects corrupt/tiny files.
+    // Pictures are extracted from the original sheets (tools/extract_from_sheets.py), so sizes differ per species; this only rejects corrupt/tiny files.
     // The real quality checks are in images.test.mjs.
     assert.ok(w >= 120 && h >= 200, `${s}_${i}.png too small: ${w}x${h}`);
     assert.equal(b[25], 6, `${s}_${i}.png should be RGBA (colour type 6)`);
@@ -54,4 +54,10 @@ test('no third-party brand wording anywhere in the game page (visible text, alt 
 test('originals of the cleaned assets are kept (35 monster pictures + logo) so before/after can be compared', () => {
   assert.equal(fs.readdirSync(path.join(ROOT, 'assets/originals/paremon_monsters2')).length, 35);
   assert.ok(fs.existsSync(path.join(ROOT, 'assets/originals/paremon_logo_center_crop2.png')));
+});
+
+test('the 6 original source sheets are kept in assets/sources (5 monster sheets + the logo drafts)', () => {
+  for (const f of ['worm_A', 'armor_A', 'golem_A', 'skeletons_A', 'dragon_A', 'logo_5_drafts']) {
+    const b = fs.readFileSync(path.join(ROOT, `assets/sources/${f}.png`)); assert.equal(b.subarray(1, 4).toString(), 'PNG'); assert.ok(b.length > 100000, f);
+  }
 });

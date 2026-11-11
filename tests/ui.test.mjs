@@ -362,3 +362,17 @@ test('touch targets: hand cards and board slots are at least 44px tall on the ph
   assert.ok(ss.every(([w, h]) => w >= 44 && h >= 44), JSON.stringify(ss));
   await ctx.close();
 });
+
+test('pictures: all 5 species x 7 states (35) render in the game with no 404 and a decoded image', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 98, viewport: MOBILE });
+  const failed = []; page.on('requestfailed', r => failed.push(r.url())); page.on('response', r => { if (r.status() >= 400) failed.push(r.url()); });
+  const seen = new Set();
+  for (const sp of ['centipede', 'dragon', 'golem', 'knight', 'skeleton']) for (let c = -1; c < 6; c++) {
+    await setup(page, { me: { active: { e: c < 0 ? [] : [c], sp }, bench: [] }, turn: 'player', step: 1 });
+    await page.waitForFunction(() => { const i = document.querySelector('#playerSlots [data-slot="player:1"] img'); return i && i.complete; });
+    const r = await page.$eval('#playerSlots [data-slot="player:1"] img', i => ({ src: i.getAttribute('src'), ok: i.naturalWidth > 0, r: i.getBoundingClientRect().width }));
+    assert.equal(r.src, `paremon_monsters2/${sp}_${c + 1}.png`); assert.ok(r.ok, r.src); assert.ok(r.r > 30, `${r.src} drawn ${r.r}px wide`); seen.add(r.src);
+  }
+  assert.equal(seen.size, 35); assert.deepEqual(failed, []); assert.deepEqual(errors, []);
+  await ctx.close();
+});

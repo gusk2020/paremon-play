@@ -188,6 +188,9 @@ body{padding:5px 7px 48px}
 .drag-valid .bcard,.drag-valid .empty-slot{outline:2px dashed #8ac9ea;outline-offset:2px}
 .drag-target .bcard,.drag-target .empty-slot{outline:4px solid #ffe28d;outline-offset:2px}
 body.dragging #hand{overflow-x:visible}
+/* Repair (v0.17 migration): a mouse drag that starts on a card picture was hijacked by the browser's native image drag (pointercancel).
+   Pictures inside draggable cards must not capture the pointer. Touch behaviour is unchanged. */
+#hand img,#playerSlots img{pointer-events:none;-webkit-user-drag:none;user-drag:none}
 
 /* v0.13: color from energies, retain v0.12 board geometry */
 .bcard .energy{font-size:.64rem;letter-spacing:-.03em}
@@ -262,7 +265,13 @@ const $=id=>document.getElementById(id);let game,selected=null,fieldSelected=nul
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fresh=(kind,color)=>({id:++uid,kind,color});
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function makeDeck(){let d=[];for(let i=0;i<6;i++)d.push(fresh('mon',i),fresh('mon',i),fresh('en',i),fresh('en',i));for(let i=0;i<3;i++)d.push(fresh('tune',i*2),fresh('boost',i*2+1));return shuffle(d)}
+// Repair (v0.17 migration): the artwork helpers below were referenced but missing from the delivered file,
+// so render() threw at load. Display only: no rule, number or deck composition changes. Species names are provisional.
+const SPECIES=['centipede','dragon','golem','knight','skeleton'],SPECIES_NAME={centipede:'ムカデ',dragon:'ドラゴン',golem:'ゴーレム',knight:'騎士',skeleton:'骸骨'};
+const monsterName=m=>SPECIES_NAME[m&&m.species]||'モンスター';
+const artSrc=(m,c)=>`paremon_monsters2/${SPECIES.includes(m&&m.species)?m.species:SPECIES[0]}_${c===null||c===undefined?0:c+1}.png`;
+const artBg=c=>'linear-gradient(180deg,#e8eef5,#789)';
+function makeDeck(){let d=[],k=0;const mk=i=>Object.assign(fresh('mon',i),{species:SPECIES[k++%SPECIES.length]});for(let i=0;i<6;i++)d.push(mk(i),mk(i),fresh('en',i),fresh('en',i));for(let i=0;i<3;i++)d.push(fresh('tune',i*2),fresh('boost',i*2+1));return shuffle(d)}
 function player(){return {deck:makeDeck(),hand:[],active:null,bench:[],kos:0,attached:false,retreated:false,tuned:false,boosted:false,tuneColor:null,bonus:0}}
 function draw(p,n=1){for(let i=0;i<n;i++){if(!p.deck.length)return false;p.hand.push(p.deck.pop())}return true}
 function mulligan(p){let n=0;do{p.deck.push(...p.hand);p.hand=[];shuffle(p.deck);draw(p,5);n++}while(!p.hand.some(x=>x.kind==='mon')&&n<100);return n-1}

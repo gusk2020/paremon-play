@@ -1,0 +1,541 @@
+{
+ "centipede_0.png": {
+  "before": [
+   495,
+   631
+  ],
+  "after": [
+   499,
+   635
+  ],
+  "log": []
+ },
+ "centipede_1.png": {
+  "before": [
+   300,
+   345
+  ],
+  "after": [
+   187,
+   296
+  ],
+  "log": [
+   "divider at x=94: removed everything left of it"
+  ]
+ },
+ "centipede_2.png": {
+  "before": [
+   300,
+   288
+  ],
+  "after": [
+   177,
+   291
+  ],
+  "log": [
+   "segments [(0, 108, 21811), (138, 299, 33829)] main=(138, 299)",
+   "removed left neighbour x<=108 (21811px)",
+   "removed orphan piece outside the subject (60px) x=109..114"
+  ]
+ },
+ "centipede_3.png": {
+  "before": [
+   340,
+   291
+  ],
+  "after": [
+   200,
+   295
+  ],
+  "log": [
+   "segments [(0, 121, 25731), (151, 339, 40467)] main=(151, 339)",
+   "removed left neighbour x<=121 (25731px)",
+   "removed orphan piece outside the subject (73px) x=122..128"
+  ]
+ },
+ "centipede_4.png": {
+  "before": [
+   305,
+   360
+  ],
+  "after": [
+   216,
+   272
+  ],
+  "log": [
+   "divider at x=79: removed everything left of it",
+   "removed stray piece at edge (369px) x=109..146 y=0..11",
+   "removed stray piece at edge (57px) x=156..177 y=0..2",
+   "removed stray piece at edge (1311px) x=185..283 y=0..28",
+   "removed stray piece at edge (209px) x=289..304 y=0..16"
+  ]
+ },
+ "centipede_5.png": {
+  "before": [
+   320,
+   374
+  ],
+  "after": [
+   231,
+   286
+  ],
+  "log": [
+   "segments [(0, 74, 14420), (101, 319, 45308)] main=(101, 319)",
+   "removed left neighbour x<=74 (14420px)",
+   "removed stray piece at edge (38px) x=75..79 y=0..7",
+   "removed stray piece at edge (369px) x=108..145 y=0..11",
+   "removed stray piece at edge (1406px) x=155..282 y=0..28",
+   "removed stray piece at edge (423px) x=288..319 y=0..17",
+   "removed orphan piece outside the subject (51px) x=75..79"
+  ]
+ },
+ "centipede_6.png": {
+  "before": [
+   320,
+   379
+  ],
+  "after": [
+   232,
+   285
+  ],
+  "log": [
+   "segments [(0, 74, 14455), (102, 319, 47480)] main=(102, 319)",
+   "removed left neighbour x<=74 (14455px)",
+   "removed stray piece at edge (538px) x=104..142 y=0..16",
+   "removed stray piece at edge (2598px) x=152..319 y=0..33",
+   "removed orphan piece outside the subject (31px) x=75..78",
+   "removed orphan piece outside the subject (58px) x=75..80"
+  ]
+ },
+ "dragon_0.png": {
+  "before": [
+   524,
+   580
+  ],
+  "after": [
+   528,
+   584
+  ],
+  "log": []
+ },
+ "dragon_1.png": {
+  "before": [
+   280,
+   238
+  ],
+  "after": [
+   215,
+   242
+  ],
+  "log": [
+   "divider at x=54: removed everything left of it"
+  ]
+ },
+ "dragon_2.png": {
+  "before": [
+   280,
+   236
+  ],
+  "after": [
+   188,
+   240
+  ],
+  "log": [
+   "segments [(0, 90, 11256), (99, 279, 28899)] main=(99, 279)",
+   "removed left neighbour x<=90 (11256px)"
+  ]
+ },
+ "dragon_3.png": {
+  "before": [
+   285,
+   236
+  ],
+  "after": [
+   167,
+   240
+  ],
+  "log": [
+   "segments [(0, 117, 15325), (125, 284, 25063)] main=(125, 284)",
+   "removed left neighbour x<=117 (15325px)",
+   "removed orphan piece outside the subject (15px) x=118..118"
+  ]
+ },
+ "dragon_4.png": {
+  "before": [
+   280,
+   313
+  ],
+  "after": [
+   222,
+   271
+  ],
+  "log": [
+   "segments [(0, 41, 2341), (65, 279, 34394)] main=(65, 279)",
+   "removed left neighbour x<=41 (2341px)",
+   "removed stray piece at edge (157px) x=49..49 y=147..312",
+   "removed orphan piece outside the subject (2px) x=49..49",
+   "removed orphan piece outside the subject (14px) x=49..49",
+   "removed orphan piece outside the subject (24px) x=42..49"
+  ]
+ },
+ "dragon_5.png": {
+  "before": [
+   285,
+   262
+  ],
+  "after": [
+   200,
+   266
+  ],
+  "log": [
+   "segments [(0, 84, 10261), (92, 284, 31346)] main=(92, 284)",
+   "removed left neighbour x<=84 (10261px)",
+   "removed orphan piece outside the subject (15px) x=85..85"
+  ]
+ },
+ "dragon_6.png": {
+  "before": [
+   285,
+   262
+  ],
+  "after": [
+   179,
+   266
+  ],
+  "log": [
+   "segments [(0, 108, 14317), (113, 284, 28001)] main=(113, 284)",
+   "removed left neighbour x<=108 (14317px)",
+   "removed orphan piece outside the subject (9px) x=109..109"
+  ]
+ },
+ "golem_0.png": {
+  "before": [
+   518,
+   599
+  ],
+  "after": [
+   522,
+   603
+  ],
+  "log": []
+ },
+ "golem_1.png": {
+  "before": [
+   265,
+   305
+  ],
+  "after": [
+   198,
+   251
+  ],
+  "log": [
+   "divider at x=54: removed everything left of it"
+  ]
+ },
+ "golem_2.png": {
+  "before": [
+   285,
+   246
+  ],
+  "after": [
+   183,
+   250
+  ],
+  "log": [
+   "segments [(0, 102, 14949), (110, 284, 29997)] main=(110, 284)",
+   "removed left neighbour x<=102 (14949px)",
+   "removed orphan piece outside the subject (10px) x=103..103",
+   "removed orphan piece outside the subject (4px) x=103..103"
+  ]
+ },
+ "golem_3.png": {
+  "before": [
+   290,
+   243
+  ],
+  "after": [
+   146,
+   247
+  ],
+  "log": [
+   "segments [(0, 133, 19888), (151, 289, 23264)] main=(151, 289)",
+   "removed left neighbour x<=133 (19888px)",
+   "removed orphan piece outside the subject (12px) x=134..134"
+  ]
+ },
+ "golem_4.png": {
+  "before": [
+   280,
+   335
+  ],
+  "after": [
+   212,
+   244
+  ],
+  "log": [
+   "divider at x=54: removed everything left of it",
+   "removed stray piece at edge (423px) x=109..159 y=0..9"
+  ]
+ },
+ "golem_5.png": {
+  "before": [
+   295,
+   291
+  ],
+  "after": [
+   207,
+   243
+  ],
+  "log": [
+   "segments [(0, 70, 9445), (96, 294, 33407)] main=(96, 294)",
+   "removed left neighbour x<=70 (9445px)",
+   "removed stray piece at edge (626px) x=118..179 y=0..12",
+   "removed orphan piece outside the subject (64px) x=71..75"
+  ]
+ },
+ "golem_6.png": {
+  "before": [
+   290,
+   291
+  ],
+  "after": [
+   176,
+   243
+  ],
+  "log": [
+   "segments [(0, 99, 14527), (121, 289, 27010)] main=(121, 289)",
+   "removed left neighbour x<=99 (14527px)",
+   "removed stray piece at edge (428px) x=137..191 y=0..9",
+   "removed orphan piece outside the subject (4px) x=100..100",
+   "removed orphan piece outside the subject (13px) x=100..100"
+  ]
+ },
+ "knight_0.png": {
+  "before": [
+   515,
+   621
+  ],
+  "after": [
+   519,
+   625
+  ],
+  "log": []
+ },
+ "knight_1.png": {
+  "before": [
+   280,
+   320
+  ],
+  "after": [
+   216,
+   280
+  ],
+  "log": [
+   "divider at x=54: removed everything left of it"
+  ]
+ },
+ "knight_2.png": {
+  "before": [
+   290,
+   274
+  ],
+  "after": [
+   202,
+   278
+  ],
+  "log": [
+   "segments [(0, 80, 11437), (110, 289, 33421)] main=(110, 289)",
+   "removed left neighbour x<=80 (11437px)",
+   "removed orphan piece outside the subject (15px) x=81..81"
+  ]
+ },
+ "knight_3.png": {
+  "before": [
+   310,
+   274
+  ],
+  "after": [
+   198,
+   278
+  ],
+  "log": [
+   "segments [(0, 105, 15732), (123, 309, 35333)] main=(123, 309)",
+   "removed left neighbour x<=105 (15732px)",
+   "removed orphan piece outside the subject (11px) x=106..106"
+  ]
+ },
+ "knight_4.png": {
+  "before": [
+   285,
+   350
+  ],
+  "after": [
+   222,
+   279
+  ],
+  "log": [
+   "divider at x=54: removed everything left of it"
+  ]
+ },
+ "knight_5.png": {
+  "before": [
+   285,
+   271
+  ],
+  "after": [
+   217,
+   275
+  ],
+  "log": [
+   "segments [(0, 59, 7098), (89, 284, 36142)] main=(89, 284)",
+   "removed left neighbour x<=59 (7098px)",
+   "removed orphan piece outside the subject (21px) x=60..61"
+  ]
+ },
+ "knight_6.png": {
+  "before": [
+   305,
+   271
+  ],
+  "after": [
+   213,
+   275
+  ],
+  "log": [
+   "segments [(0, 85, 11501), (110, 304, 38092)] main=(110, 304)",
+   "removed left neighbour x<=85 (11501px)",
+   "removed orphan piece outside the subject (6px) x=86..86"
+  ]
+ },
+ "skeleton_0.png": {
+  "before": [
+   784,
+   712
+  ],
+  "after": [
+   704,
+   716
+  ],
+  "log": [
+   "segments [(16, 693, 156494), (749, 783, 6967)] main=(16, 693)",
+   "removed right neighbour x>=749 (6967px)",
+   "removed orphan piece outside the subject (17px) x=745..748",
+   "removed orphan piece outside the subject (69px) x=742..748",
+   "removed orphan piece outside the subject (94px) x=743..748",
+   "removed orphan piece outside the subject (80px) x=740..748"
+  ]
+ },
+ "skeleton_1.png": {
+  "before": [
+   420,
+   326
+  ],
+  "after": [
+   312,
+   330
+  ],
+  "log": [
+   "segments [(5, 299, 57180), (306, 419, 23179)] main=(5, 299)",
+   "removed right neighbour x>=306 (23179px)"
+  ]
+ },
+ "skeleton_2.png": {
+  "before": [
+   425,
+   326
+  ],
+  "after": [
+   263,
+   330
+  ],
+  "log": [
+   "segments [(0, 250, 58904), (257, 424, 37330)] main=(0, 250)",
+   "removed right neighbour x>=257 (37330px)"
+  ]
+ },
+ "skeleton_3.png": {
+  "before": [
+   254,
+   325
+  ],
+  "after": [
+   258,
+   329
+  ],
+  "log": []
+ },
+ "skeleton_4.png": {
+  "before": [
+   420,
+   333
+  ],
+  "after": [
+   309,
+   337
+  ],
+  "log": [
+   "segments [(0, 299, 61432), (303, 419, 24033)] main=(0, 299)",
+   "removed right neighbour x>=303 (24033px)"
+  ]
+ },
+ "skeleton_5.png": {
+  "before": [
+   435,
+   335
+  ],
+  "after": [
+   277,
+   333
+  ],
+  "log": [
+   "segments [(0, 269, 63341), (271, 434, 38928)] main=(0, 269)",
+   "removed right neighbour x>=271 (38928px)"
+  ]
+ },
+ "skeleton_6.png": {
+  "before": [
+   251,
+   338
+  ],
+  "after": [
+   255,
+   342
+  ],
+  "log": []
+ },
+ "paremon_logo_center_crop2.png": {
+  "before": [
+   435,
+   360
+  ],
+  "after": [
+   411,
+   274
+  ],
+  "log": [
+   "removed component 1: 2227px bbox=(146,11)-(309,37)",
+   "removed component 2: 99px bbox=(0,20)-(32,22)",
+   "removed component 3: 98px bbox=(0,30)-(32,32)",
+   "removed component 4: 197px bbox=(0,42)-(32,51)",
+   "removed component 5: 500px bbox=(87,45)-(171,69)",
+   "removed component 6: 1380px bbox=(164,45)-(317,69)",
+   "removed component 7: 578px bbox=(323,45)-(369,69)",
+   "removed component 8: 88px bbox=(98,48)-(126,54)",
+   "removed component 9: 35px bbox=(5,73)-(14,78)",
+   "removed component 11: 76px bbox=(7,84)-(32,87)",
+   "kept component 12: 57425px bbox=(32,96)-(427,313)",
+   "removed component 14: 250px bbox=(0,119)-(25,134)",
+   "removed component 15: 98px bbox=(0,151)-(32,153)",
+   "removed component 16: 214px bbox=(0,181)-(32,191)",
+   "removed component 17: 141px bbox=(0,199)-(32,203)",
+   "removed component 18: 98px bbox=(0,210)-(32,212)",
+   "kept component 19: 1499px bbox=(360,290)-(413,350)",
+   "kept component 20: 303px bbox=(83,321)-(112,347)",
+   "kept component 21: 1878px bbox=(206,321)-(352,350)",
+   "kept component 22: 632px bbox=(118,322)-(169,348)",
+   "kept component 23: 58px bbox=(174,324)-(184,331)",
+   "kept component 24: 161px bbox=(174,328)-(199,348)",
+   "removed component 25: 166px bbox=(0,341)-(33,359)"
+  ]
+ }
+}

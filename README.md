@@ -16,6 +16,7 @@ Pixel 7a 実機での動作は **未確認** です（下記テストはPCのChr
 | [docs/TESTING.md](docs/TESTING.md) | テストの内容・実行方法・限界 |
 | [docs/STATUS.md](docs/STATUS.md) | 現状、既知の問題、次の作業、再開情報 |
 | [docs/source/](docs/source/) | 移行元の元資料（原文のまま保全） |
+| [assets/originals/](assets/originals/) | 清掃前の画像・ロゴの原本（削除しない）。`python3 tools/clean_assets.py` で再生成 |
 | [.claude/skills/game-development/SKILL.md](.claude/skills/game-development/SKILL.md) | ゲーム開発スキル v4.0（正本のコピー、無改変） |
 
 ## テスト

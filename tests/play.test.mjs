@@ -21,7 +21,7 @@ const DRIVER = () => {
           if (m.energy.some(c => !(c >= 0 && c <= 5))) violations.push('bad energy colour');
           if (energyTotal(m, p) < 0) violations.push('negative effective energy');
         }
-        if (p.deck.length + p.hand.length > 30) violations.push(`${side} has more than 30 cards`);
+        if (p.deck.length + p.hand.length > (window.__maxCards || 30)) violations.push(`${side} has more than ${window.__maxCards || 30} cards`);
       }
       if (game.over) {
         const ok = game.me.kos >= game.targetKos || game.ai.kos >= game.targetKos || (!game.ai.active && !game.ai.bench.length) ||
@@ -90,5 +90,20 @@ test('deck-out in real play: with no attacks the first player runs out of deck f
   assert.equal(await page.evaluate(() => [game.me.kos, game.ai.kos, game.me.deck.length, game.ai.deck.length].join()), '0,0,0,0',
     'ended by deck-out, not a fight; the AI drew its own last card one step earlier, so it can never be the one that fails to draw (see KD-1)');
   assert.equal(r.stats.ends, 25, 'the player ends turns 1..25 passively; turn 26 cannot draw');
+  await ctx.close();
+});
+
+test('AI deck-out in real play: when the AI runs dry first, the player sees "あなたの勝利" at the end of the AI turn', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 78 });
+  await page.evaluate(DRIVER);
+  await page.evaluate(() => {
+    for (const c of [...game.ai.deck, ...game.ai.hand]) if (c.kind === 'en') { c.kind = 'boost'; c.color = 1; }   // the AI can never attack
+    for (let i = 0; i < 5; i++) game.me.deck.push(fresh('boost', 1));                                           // the player has 5 more cards than the AI
+    window.__maxCards = 35;
+  });
+  const r = await page.evaluate(() => window.__play(20000, 'passive'));
+  assert.deepEqual(errors, []); assert.deepEqual(r.violations, []);
+  assert.equal(r.over, true); assert.match(r.text, /あなたの勝利.*引けませんでした/); assert.equal(r.winner, 'me');
+  assert.equal(await page.evaluate(() => [game.me.kos, game.ai.kos, game.ai.deck.length].join()), '0,0,0');
   await ctx.close();
 });

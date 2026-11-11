@@ -231,10 +231,90 @@ test('species are display-only: the same colour/energy gives the same damage for
   assert.deepEqual(out, [4, 4, 4, 4, 4]);
 });
 
-// CHARACTERIZATION (current behaviour, not a confirmed rule): while a colour adjustment is active, an energy card
-// that is complementary to the ORIGINAL base colour can still be attached, because the check uses the temporary colour.
-// docs/SPEC.md lists this as an open question for ChatGPT/the user. If the rule is decided, change this test with it.
-test('CHARACTERIZATION: attaching the original base colour\'s complement during a colour adjustment is currently allowed', async () => {
-  const r = await ev(() => { const m = mon({ id: 77 }); m.energy = [R]; game.me.active = m; game.me.tuneColor = O; return [canAttach(m, G, game.me), canAttach(m, B, game.me)]; });
-  assert.deepEqual(r, [true, false]); // 緑 (complement of base 赤) allowed; 青 (complement of the temporary 橙) refused
+// ---- KD-6 (user-confirmed spec): only the complement of the TEMPORARY base colour is refused while a colour adjustment is active ----
+test('KD-6 spec: colourless monsters accept any first energy; normal base refuses only its own complement', async () => {
+  const r = await ev(() => { const m = mon({ id: 80 }); game.me.active = m; game.me.tuneColor = null; const none = [0,1,2,3,4,5].map(c => canAttach(m, c, game.me));
+    m.energy = [R]; const red = [0,1,2,3,4,5].map(c => canAttach(m, c, game.me)); return { none, red }; });
+  assert.deepEqual(r.none, [true, true, true, true, true, true]);
+  assert.deepEqual(r.red, [true, true, true, false, true, true]); // 緑 is the complement of 赤
+});
+
+test('KD-6 spec: base 赤 tuned to 橙 -> 青 (complement of 橙) refused, 緑 (complement of 赤) allowed', async () => {
+  const r = await ev(() => { const m = mon({ id: 81 }); m.energy = [R]; game.me.active = m; game.me.tuneColor = O;
+    return [0,1,2,3,4,5].map(c => canAttach(m, c, game.me)); });
+  assert.deepEqual(r, [true, true, true, true, false, true]);
+});
+
+test('KD-6 spec: the real drop path agrees (drag 緑 allowed, 青 refused while tuned to 橙)', async () => {
+  await setup(page, { me: { active: { e: [R] }, bench: [], tuneColor: O, hand: [{ kind: 'en', color: G }, { kind: 'en', color: B }] }, turn: 'player', step: 1 });
+  const v = await ev(() => game.me.hand.map(c => validDrop({ source: 'hand', key: String(c.id) }, 1)));
+  assert.deepEqual(v, [true, false]);
+});
+
+test('KD-6 spec: after the turn the colour returns; the complement card is KEPT but counts 0; counts are recomputed and can re-activate', async () => {
+  const r = await ev(() => {
+    const m = mon({ id: 82 }); m.energy = [R]; game.me.active = m; game.me.tuneColor = O; game.me.attached = false;
+    const card = fresh('en', G); game.me.hand = [card];
+    take(game.me, card.id); m.energy.push(card.color);                           // 緑 attached while tuned to 橙
+    const tuned = { counts: energyCounts(m, game.me), total: energyTotal(m, game.me) };
+    game.me.tuneColor = null;                                                    // turn ends: back to base 赤
+    const after = { counts: energyCounts(m, game.me), total: energyTotal(m, game.me), energy: [...m.energy], base: base(m), refusesNow: !canAttach(m, G, game.me) };
+    game.me.tuneColor = O; const again = energyCounts(m, game.me); game.me.tuneColor = null;   // a later colour change re-activates it
+    const m2 = mon({ id: 83 }); m2.energy = m.energy.slice(1); const rebase = { base: base(m2), counts: energyCounts(m2, game.me) };   // 赤 discarded -> 緑 becomes the base
+    return { tuned, after, again, rebase };
+  });
+  assert.deepEqual(r.tuned.counts, [1, 0, 0, 1, 0, 0]); assert.equal(r.tuned.total, 2);          // tuned to 橙: 赤1 + 緑1 (both "other colour")
+  assert.deepEqual(r.after.counts, [1, 0, 0, 0, 0, 0]); assert.equal(r.after.total, 1);          // back at 赤: 緑 is a complement -> 0
+  assert.deepEqual(r.after.energy, [R, G], 'the card is not discarded');
+  assert.equal(r.after.base, R); assert.equal(r.after.refusesNow, true, 'a new 緑 cannot be attached while the base is 赤');
+  assert.deepEqual(r.again, [1, 0, 0, 1, 0, 0]);
+  assert.equal(r.rebase.base, G); assert.deepEqual(r.rebase.counts, [0, 0, 0, 1, 0, 0]);
+});
+
+test('KD-6 spec: end of the player turn really restores the colour and recalculates (endPlayer)', async () => {
+  await setup(page, { me: { active: { e: [R, G] }, bench: [], tuneColor: O, tuned: true }, ai: { active: { e: [P] }, bench: [] }, targetKos: 4 });
+  const before = await ev(() => energyTotal(game.me.active, game.me));
+  await ev(() => endPlayer());
+  const after = await ev(() => [energyTotal(game.me.active, game.me), game.me.active.energy.length, game.me.tuneColor]);
+  assert.equal(before, 2); assert.deepEqual(after, [1, 2, null]);
+});
+
+// ---- KD-2: the victory reason reads correctly from the player's point of view, for both attackers ----
+for (const [who, kos, text] of [
+  ['me', 'target', t => `あなたの勝利！ ${t}体撃破`], ['ai', 'target', t => `相手の勝利！ ${t}体撃破`]]) {
+  for (const target of [2, 3, 4]) {
+    test(`KD-2 wording: ${who === 'me' ? 'player' : 'AI'} wins by ${target} knockouts -> "${text(target)}"`, async () => {
+      const A = who === 'me' ? 'me' : 'ai', D = who === 'me' ? 'ai' : 'me';
+      await setup(page, { [A]: { active: { e: [R] }, bench: [], kos: target - 1 }, [D]: { active: { e: [R], d: 9 }, bench: [{ e: [] }, { e: [] }] }, targetKos: target, turn: who === 'me' ? 'player' : 'ai' });
+      const r = await attack(page, A, false);
+      assert.equal(r.over, true); assert.ok(r.texts.includes(text(target)), r.texts.join(' / '));
+    });
+  }
+}
+test('KD-2 wording: player wins with the opponent bench empty -> "あなたの勝利！ 相手の控えがいない"', async () => {
+  await setup(page, { me: { active: { e: [R] }, bench: [], kos: 0 }, ai: { active: { e: [R], d: 9 }, bench: [] }, targetKos: 4 });
+  const r = await attack(page, 'me', false); assert.ok(r.texts.includes('あなたの勝利！ 相手の控えがいない'), r.texts.join(' / '));
+});
+test('KD-2 wording: AI wins with the player bench empty -> "相手の勝利！ あなたの控えがいない" (never the ambiguous "相手の控え")', async () => {
+  await setup(page, { me: { active: { e: [R], d: 9 }, bench: [] }, ai: { active: { e: [R] }, bench: [{ e: [] }], kos: 0 }, targetKos: 4, turn: 'ai' });
+  const r = await attack(page, 'ai', false);
+  assert.equal(r.over, true); assert.ok(r.texts.includes('相手の勝利！ あなたの控えがいない'), r.texts.join(' / '));
+  assert.ok(!r.texts.some(t => t.includes('相手の控えがいない')), 'the AI win must not claim that "the opponent" has no bench');
+});
+test('KD-2: the judgement itself is unchanged (bench empty wins even below the KO target, bench present does not)', async () => {
+  await setup(page, { me: { active: { e: [R], d: 9 }, bench: [{ e: [] }] }, ai: { active: { e: [R] }, bench: [{ e: [] }], kos: 0 }, targetKos: 4, turn: 'ai' });
+  assert.equal((await attack(page, 'ai', false)).over, false);
+});
+
+// ---- KD-3: tune/boost carry no colour for any internal .color value ----
+test('KD-3: colour adjustment and boost behave identically whatever internal colour field they carry', async () => {
+  const out = [];
+  for (const kind of ['tune', 'boost']) for (let c = 0; c < 6; c++) {
+    await setup(page, { me: { active: { e: [R] }, bench: [], hand: [{ kind, color: c }] }, turn: 'player', step: 1 });
+    out.push(await ev(() => { const k = game.me.hand[0]; return [canUseHand(k), (useHand(k), 0)]; }).then(x => x[0]));
+  }
+  assert.ok(out.every(v => v === true));
+  await setup(page, { me: { active: { e: [R] }, bench: [], hand: [{ kind: 'boost', color: 4 }] }, ai: { active: { e: [R] }, bench: [] }, turn: 'player', step: 1 });
+  await ev(() => { useHand(game.me.hand[0]); acknowledge(); });
+  assert.deepEqual(await ev(() => [game.me.bonus, game.me.boosted, game.me.tuneColor]), [1, true, null]);
 });

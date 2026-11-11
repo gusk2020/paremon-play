@@ -244,3 +244,121 @@ test('pictures: a monster is drawn with its colour variant (none -> _0, 赤..紫
   assert.equal(await src(), 'paremon_monsters2/knight_5.png', 'temporary 青 shows the blue picture');
   await ctx.close();
 });
+
+// ---------------- KD-1: AI cannot draw -> the player SEES the win and restarts only by an explicit tap ----------------
+test('KD-1: AI deck empty at its turn start: failure message, then "あなたの勝利", then the player taps to start a new match', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 91, viewport: DESKTOP });
+  await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [0] }, bench: [] }, turn: 'player', step: 1 });
+  await page.evaluate(() => { game.ai.deck = []; });
+  await page.click('#turnControl button');                        // 攻撃せずターン終了
+  await page.click('#modalButtons button:has-text("ターン終了")');
+  await ack1(page, /あなたはターンを終了した/);
+  const seen = [];
+  const read = () => page.evaluate(() => ({ text: document.getElementById('messageText').textContent, shown: document.getElementById('message').classList.contains('show'), over: game.over, kos: game.me.kos + ',' + game.ai.kos, id: game.me.hand.map(c => c.id).join() }));
+  let s = await read(); seen.push(s.text);
+  assert.match(s.text, /山札から引けない/); assert.equal(s.over, false, 'not over yet: nothing may restart before the player has seen the result');
+  const handBefore = s.id;
+  await page.click('#message');
+  s = await read(); seen.push(s.text);
+  assert.match(s.text, /あなたの勝利！ 相手は山札から引けませんでした/); assert.equal(s.over, true);
+  assert.equal(await page.textContent('#messageTap'), '次の対戦に進む ▶');
+  assert.equal(await page.evaluate(() => game.turn), 'end');
+  await page.waitForTimeout(300);                                  // nothing happens on its own: the result stays until the player acts
+  s = await read(); assert.equal(s.shown, true); assert.equal(s.id, handBefore);
+  await page.click('#message');                                    // explicit operation -> next match
+  assert.deepEqual(await page.evaluate(() => [game.turn, game.over, game.me.hand.length, game.me.kos, game.ai.kos]), ['setup', false, 5, 0, 0]);
+  assert.deepEqual(errors, []); await ctx.close();
+});
+async function ack1(page, re) { // click one message at a time until the one matching `re` has been acknowledged
+  for (let i = 0; i < 12; i++) { const t = await page.evaluate(() => document.getElementById('message').classList.contains('show') ? document.getElementById('messageText').textContent : null);
+    if (t === null) return; const hit = re.test(t); await page.click('#message'); if (hit) return; }
+}
+
+test('KD-1: the normal victory / defeat / restart paths still work through real taps (attack win, deck-out loss)', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 92, viewport: DESKTOP });
+  await setup(page, { me: { active: { e: [0] }, bench: [], kos: 1 }, ai: { active: { e: [0], d: 9 }, bench: [{ e: [] }] }, targetKos: 2, turn: 'player', step: 1 });
+  await page.click('#playerSlots [data-slot="player:1"]'); await page.click('#modalButtons button:has-text("ワザ①")'); await page.click('#modalButtons button:has-text("攻撃する")');
+  assert.match(await page.textContent('#messageText'), /ダメージ/); await page.click('#message');
+  assert.match(await page.textContent('#messageText'), /あなたが1体撃破！ 2\/2/); await page.click('#message');
+  assert.match(await page.textContent('#messageText'), /あなたの勝利！ 2体撃破/); assert.equal(await page.evaluate(() => game.over), true);
+  await page.click('#message');
+  assert.equal(await page.evaluate(() => game.turn), 'setup');
+  // player deck-out loss
+  await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [0] }, bench: [] }, turn: 'ai', step: 2 });
+  await page.evaluate(() => { game.me.deck = []; afterAi(); });
+  assert.match(await page.textContent('#messageText'), /相手の勝利！ あなたは山札から引けませんでした/);
+  await page.click('#message'); assert.equal(await page.evaluate(() => game.turn), 'setup');
+  await ctx.close();
+});
+
+// ---------------- KD-3: auxiliary cards show no colour ----------------
+test('KD-3: 色調整 / 増強 cards are neutral auxiliary cards (no colour name, neutral swatch, own label); energy cards keep their colour', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 93, viewport: DESKTOP });
+  const NEUTRAL = 'rgb(133, 149, 166)', NAMES = /[赤橙黄緑青紫]/;
+  for (let c = 0; c < 6; c++) {
+    await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: c }, { kind: 'boost', color: c }, { kind: 'en', color: 2 }, { kind: 'mon' }] }, turn: 'player', step: 1 });
+    const cards = await page.$$eval('#hand .hand-card', els => els.map(e => ({ aux: e.classList.contains('aux'), text: e.textContent, bg: e.querySelector('.swatch') ? getComputedStyle(e.querySelector('.swatch')).backgroundColor : null })));
+    const [tune, boost, en, mon] = cards;
+    for (const k of [tune, boost]) { assert.equal(k.aux, true); assert.equal(k.bg, NEUTRAL); assert.ok(!NAMES.test(k.text), `colour name on an auxiliary card (internal colour ${c}): ${k.text}`); }
+    assert.match(tune.text, /色調整/); assert.match(boost.text, /増強/);
+    assert.equal(en.aux, false); assert.match(en.text, /黄/); assert.notEqual(en.bg, NEUTRAL);
+    assert.ok(mon.text.includes('モンスター'));
+  }
+  await ctx.close();
+});
+
+test('KD-3: detail view and drag label of 色調整 / 増強 show no colour; the colour picker still offers the 6 colours', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 94, viewport: DESKTOP });
+  await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: 4 }, { kind: 'boost', color: 5 }] }, turn: 'player', step: 1 });
+  const [tid, bid] = await page.evaluate(() => game.me.hand.map(c => c.id));
+  for (const id of [tid, bid]) {
+    await page.click(dragHand(id)); await page.click('#modalButtons button:has-text("詳細")');
+    const d = await page.$eval('#detailContent', e => ({ sw: getComputedStyle(e.querySelector('.detail-swatch')).backgroundColor, sText: e.querySelector('.detail-swatch').textContent, text: e.textContent }));
+    assert.equal(d.sw, 'rgb(133, 149, 166)'); assert.ok(!/[赤橙黄緑青紫]{1}/.test(d.sText), d.sText);
+    await page.click('#modalButtons button:has-text("閉じる")');
+  }
+  // drag ghost
+  const a = await rect(page, dragHand(tid)); await page.evaluate(() => window.scrollBy(0, 300)); const a2 = await rect(page, dragHand(tid));
+  await page.mouse.move(a2.x, a2.y); await page.mouse.down(); await page.mouse.move(a2.x + 30, a2.y - 30, { steps: 5 });
+  const ghost = await page.textContent('#dragGhost'); assert.equal(ghost, '色調整'); await page.mouse.up(); await page.waitForTimeout(0);
+  await ack(page).catch(() => {}); await page.evaluate(() => { closeModal(false); });
+  const names = await page.evaluate(() => { document.getElementById('overlay').classList.remove('show'); return null; });
+  // the picker keeps the six real colours (those are choices, not a property of the card)
+  await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: 4 }] }, turn: 'player', step: 1 });
+  await ev2(page, () => useHand(game.me.hand[0]));
+  assert.deepEqual((await modalButtons(page)).slice(0, 6).map(b => b.t), ['赤', '橙', '黄', '緑', '青', '紫']);
+  await ctx.close();
+});
+const ev2 = (page, fn) => page.evaluate(fn);
+
+// ---------------- logo placement / layout ----------------
+for (const [name, viewport, maxLogoW] of [['phone', MOBILE, 360], ['small phone', { width: 360, height: 640 }, 360], ['desktop', DESKTOP, 420]]) {
+  test(`logo (${name}): shown at the top, decoded, scaled to the page width, aspect kept, game board not pushed off`, async () => {
+    const { ctx, page, errors } = await openGame(browser, { seed: 95, viewport });
+    const g = await page.evaluate(() => { const i = document.querySelector('.logo-banner img'), r = i.getBoundingClientRect(), b = document.querySelector('.battle').getBoundingClientRect();
+      return { ok: i.complete && i.naturalWidth > 0, nat: [i.naturalWidth, i.naturalHeight], w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right, battleTop: b.top, vw: innerWidth, overflow: document.documentElement.scrollWidth - innerWidth, alt: i.alt, src: i.getAttribute('src') }; });
+    assert.equal(g.ok, true); assert.equal(g.src, 'paremon_logo_center_crop2.png'); assert.equal(g.alt, 'パレットモンスター（パレモン）のロゴ');
+    assert.ok(g.w <= maxLogoW + 0.5 && g.w > 250, `logo width ${g.w}`); assert.ok(Math.abs(g.w / g.h - g.nat[0] / g.nat[1]) < 0.02, 'aspect ratio preserved');
+    assert.ok(g.top < 30 && g.left >= 0 && g.right <= g.vw, 'at the top, inside the viewport'); assert.ok(g.overflow <= 0);
+    assert.ok(g.battleTop >= g.bottom, 'battle board starts below the logo');
+    assert.deepEqual(errors, []); await ctx.close();
+  });
+}
+
+test('phone layout: the cleaned logo is shorter than the original (298px -> 240px at 360px width), so the board and hand sit 58px higher', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 96, viewport: MOBILE });
+  const g = await page.evaluate(() => ({ logoH: document.querySelector('.logo-banner img').getBoundingClientRect().height, handBottom: document.getElementById('hand').getBoundingClientRect().bottom }));
+  assert.ok(g.logoH <= 245, `logo height ${g.logoH}`);            // measured with the original logo: 298px, hand bottom 956px
+  assert.ok(g.handBottom <= 905, `hand bottom ${g.handBottom}`);  // measured now: 240px / 898px
+  await ctx.close();
+});
+
+test('touch targets: hand cards and board slots are at least 44px tall on the phone viewport (unchanged by the card redesign)', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 97, viewport: MOBILE });
+  await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: 1 }, { kind: 'boost', color: 1 }, { kind: 'en', color: 1 }, { kind: 'mon' }, { kind: 'en', color: 3 }] }, turn: 'player', step: 1 });
+  const hs = await page.$$eval('#hand button', bs => bs.map(b => b.getBoundingClientRect().height));
+  assert.ok(hs.every(h => h >= 44), hs.join()); assert.equal(hs.length, 5);
+  const ss = await page.$$eval('#playerSlots .slot', bs => bs.map(b => [b.getBoundingClientRect().width, b.getBoundingClientRect().height]));
+  assert.ok(ss.every(([w, h]) => w >= 44 && h >= 44), JSON.stringify(ss));
+  await ctx.close();
+});

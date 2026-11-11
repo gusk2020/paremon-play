@@ -28,7 +28,9 @@ test('35 monster images exist: 5 species x (colourless + 6 colours), each a real
     const b = fs.readFileSync(f);
     assert.equal(b.subarray(1, 4).toString(), 'PNG', f);
     const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-    assert.ok(w >= 200 && h >= 200, `${s}_${i}.png too small: ${w}x${h}`);
+    // Pictures were cleaned of neighbour fragments (tools/clean_assets.py), so real sizes differ; this only rejects corrupt/tiny files.
+    // The real quality checks are in images.test.mjs.
+    assert.ok(w >= 120 && h >= 200, `${s}_${i}.png too small: ${w}x${h}`);
     assert.equal(b[25], 6, `${s}_${i}.png should be RGBA (colour type 6)`);
   }
   assert.equal(fs.readdirSync(path.join(ROOT, 'paremon_monsters2')).length, 35);
@@ -43,4 +45,13 @@ test('no extra or misnamed files in paremon_monsters2', () => {
 test('logo file exists and is a PNG', () => {
   const b = fs.readFileSync(path.join(ROOT, 'paremon_logo_center_crop2.png'));
   assert.equal(b.subarray(1, 4).toString(), 'PNG');
+});
+
+test('no third-party brand wording anywhere in the game page (visible text, alt text, title)', () => {
+  for (const word of ['ニンテンドー', '任天堂', 'Nintendo', 'ポケモン', 'Pokemon']) assert.ok(!html.includes(word), `found ${word}`);
+});
+
+test('originals of the cleaned assets are kept (35 monster pictures + logo) so before/after can be compared', () => {
+  assert.equal(fs.readdirSync(path.join(ROOT, 'assets/originals/paremon_monsters2')).length, 35);
+  assert.ok(fs.existsSync(path.join(ROOT, 'assets/originals/paremon_logo_center_crop2.png')));
 });

@@ -1,0 +1,621 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101a26"><title>パレモン｜対峙するカード対戦 v0.17</title>
+<style>
+:root{font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif;color-scheme:dark;background:#101a26;color:#f5f8fd}*{box-sizing:border-box}body{margin:0 auto;max-width:620px;padding:8px 10px 80px}.logo-banner{display:flex;justify-content:center;align-items:center;margin:4px 0 10px}.logo-banner img{display:block;width:min(100%,360px);height:auto;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));border-radius:14px}.monster-art-panel{position:relative;width:100%;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#e8eef5,#789);padding:2px;min-height:46px}.monster-art-panel img{max-width:100%;max-height:100%;object-fit:contain;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}.monster-badge{position:absolute;right:4px;bottom:4px;min-width:30px;padding:1px 5px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(10,18,28,.72);color:#fff;font-size:.56rem;font-weight:800;line-height:1.25}.monster-name{display:block;font-weight:800;font-size:.72rem;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bcard .monster-art-panel{min-height:52px;margin-top:1px}.bcard .monster-name{font-size:.68rem;color:#eef6fd}.hand-card .monster-art-panel{min-height:42px}.hand-card .monster-name{font-size:.82rem}.detail-art{margin:0 0 10px}.detail-art .monster-art-panel{min-height:138px;background:linear-gradient(180deg,#eef4fb,#bfd0de)}.detail-art .monster-badge{font-size:.78rem;padding:3px 8px}@media(min-width:900px){body{max-width:980px}.logo-banner img{width:min(100%,420px)}}button{font:inherit;color:inherit;background:#28435b;border:1px solid #6486a0;border-radius:11px;min-height:44px;padding:9px 11px;cursor:pointer}button:disabled{opacity:.35}button:focus-visible,[tabindex]:focus-visible{outline:3px solid #ffdf77;outline-offset:2px}.primary{background:#176fa8;border-color:#81caff;font-weight:750}h1{font-size:1.15rem;margin:0}h2{font-size:.96rem;margin:0 0 8px}small,.muted{color:#c4d0db}.header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.topnote{color:#c6d5e0;font-size:.74rem}.panel{background:#1b2b3b;border:1px solid #3b556b;border-radius:14px;padding:11px;margin:10px 0}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.pill{font-size:.78rem;border:1px solid #68819b;background:#273b4b;border-radius:30px;padding:5px 9px}.battle{background:linear-gradient(180deg,#22374b 0%,#192b39 45%,#192d3c 55%,#254157 100%);border:1px solid #527089;border-radius:18px;overflow:hidden;position:relative;padding:9px 8px 13px}.team-bar{display:flex;align-items:center;justify-content:space-between;font-size:.8rem;padding:2px 5px;gap:5px}.team-bar strong{font-size:.91rem}.field{position:relative;height:180px}.enemy-field{margin-top:2px}.player-field{margin-bottom:2px}.slots{display:flex;justify-content:center;gap:18px;position:absolute;left:0;right:0;top:28px;align-items:flex-start}.field.enemy-field .slots{top:10px}.field.player-field .slots{top:49px}.slot{position:relative;flex:0 0 96px;width:96px;height:124px}.bcard{width:100%;height:124px;border:2px solid #7594ae;border-radius:12px;background:#21374b;padding:6px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 3px 8px #0004;text-align:center;position:relative}.bcard.front{border:3px solid #ffde77;background:#2b4359;z-index:1}.enemy-field .bcard.front{transform:translateY(55px)}.player-field .bcard.front{transform:translateY(-55px)}.swatch{width:100%;height:37px;border:1px solid #ffffff66;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#101923;font-weight:900;font-size:1rem}.bcard .kind{font-size:.66rem;font-weight:750;color:#e8f3fa}.bcard .hp{font-size:.78rem;font-weight:750}.bcard .energy{font-size:.66rem;color:#e3edf8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}.direction{font-size:.64rem;font-weight:750;color:#f4df9b}.empty-slot{border:1px dashed #7290a9;border-radius:12px;height:124px;display:flex;align-items:center;justify-content:center;color:#adbfce;font-size:.72rem}.enemy-field .empty-slot.front{transform:translateY(55px)}.player-field .empty-slot.front{transform:translateY(-55px)}.front-label{position:absolute;left:2px;right:2px;text-align:center;color:#fce5a0;font-size:.68rem;font-weight:800}.enemy-field .front-label{bottom:0}.player-field .front-label{top:0}.center-line{height:25px;margin:0 3px;border-top:1px solid #aac4da66;border-bottom:1px solid #aac4da66;background:#0d1c2d55;display:flex;align-items:center;justify-content:center;text-align:center}.center-line .vs{font-weight:900;letter-spacing:3px;color:#adcadc;font-size:.83rem}.notice{min-height:44px;background:#163953;border:1px solid #638bab;border-radius:10px;padding:10px 12px;font-size:.85rem;line-height:1.4;margin:9px 0}.message{position:absolute;left:2px;right:2px;min-height:52px;border:2px solid #ffe38a;background:#061828f5;border-radius:12px;z-index:7;display:none;align-items:center;gap:8px;justify-content:space-between;padding:9px 10px;box-shadow:0 6px 20px #0009;font-weight:750;font-size:.89rem;text-align:left;line-height:1.4;width:calc(100% - 4px)}.message.show{display:flex}.message .tap{flex:0 0 auto;font-size:.69rem;color:#fff1ba;white-space:nowrap}.message[data-zone=enemy-bench]{top:18px}.message[data-zone=enemy-front]{top:103px}.message[data-zone=center]{top:calc(50% - 28px)}.message[data-zone=player-front]{bottom:103px}.message[data-zone=player-bench]{bottom:18px}.message.done{background:#314c39;border-color:#a2d99b}.battle-body{position:relative}.hand{display:flex;gap:7px;overflow-x:auto;padding:6px 2px 10px;scroll-snap-type:x mandatory}.hand button{flex:0 0 112px;min-height:125px;padding:0;scroll-snap-align:start}.hand-card{height:124px;padding:7px;display:flex;flex-direction:column;gap:4px;text-align:left}.hand-card.sel{outline:3px solid #ffe28d;border-radius:10px}.hand-card .swatch{height:29px}.hand-card .small{font-size:.72rem;color:#d7e3ed}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.actions button{width:100%;font-size:.86rem;line-height:1.25}.hint{font-size:.81rem;color:#dae3ec;margin-top:6px;line-height:1.5}.history{max-height:140px;overflow:auto;font-size:.8rem;line-height:1.5}.history div{padding:5px 0;border-bottom:1px solid #3c5267}details summary{cursor:pointer;padding:4px}#overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;padding:16px;background:#09121fe9;z-index:20}#overlay.show{display:flex}#modal{width:min(100%,440px);max-height:86vh;overflow:auto;background:#21384d;border:1px solid #85a9c2;border-radius:17px;padding:18px}#modal h2{font-size:1.1rem}#modalButtons{display:grid;grid-template-columns:1fr 1fr;gap:7px}#modalButtons button{min-height:46px}.rules{font-size:.8rem;line-height:1.6}.rules p{margin:6px 0}body.locked #hand button{pointer-events:none;opacity:.55}body.locked #actions button{pointer-events:none;opacity:.55}body.locked .message{pointer-events:auto}@media(max-width:370px){.battle{padding:8px 5px}.slots{gap:4px}.bcard{padding:4px 2px}.bcard .energy{font-size:.59rem}.message{font-size:.79rem}.message .tap{font-size:.6rem}}
+
+/* v0.3: one-screen battle field + hand on narrow smartphones */
+body{padding:5px 7px 48px}
+.header{display:none}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.panel{margin:6px 0;padding:7px 8px;border-radius:12px}
+.battle{padding:5px 5px 6px;border-radius:14px}
+.team-bar{min-height:27px;padding:0 3px;font-size:.68rem;gap:3px}
+.team-bar strong{font-size:.78rem}
+.pill{font-size:.67rem;padding:3px 6px}
+.field{height:132px}
+.field.enemy-field .slots{top:3px}
+.field.player-field .slots{top:38px}
+.slots{gap:14px;left:0;right:0}
+.slot{height:92px}
+.bcard{height:92px;padding:3px 2px;gap:1px;border-radius:9px;border-width:1px}
+.bcard.front{border-width:2px}
+.enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(34px)}
+.player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-34px)}
+.swatch{height:26px;border-radius:5px;font-size:.89rem}
+.bcard .kind{font-size:.57rem;line-height:1.1}
+.bcard .hp{font-size:.69rem;line-height:1.15}
+.bcard .energy{font-size:.54rem;line-height:1.1}
+.direction{font-size:.53rem;line-height:1.05}
+.empty-slot{height:92px;font-size:.7rem;border-radius:9px}
+.front-label{font-size:.59rem;line-height:1.2}
+.enemy-field .front-label{bottom:1px}
+.player-field .front-label{top:1px}
+.center-line{height:36px;margin:0 2px;position:relative}
+.center-line .vs{font-size:.68rem}
+.message{min-height:42px;padding:7px 8px;font-size:.78rem;line-height:1.35;border-radius:9px}
+.message .tap{font-size:.61rem}
+.message[data-zone=enemy-bench]{top:5px}
+.message[data-zone=enemy-front]{top:80px}
+.message[data-zone=center]{top:calc(50% - 22px)}
+.message[data-zone=player-front]{bottom:80px}
+.message[data-zone=player-bench]{bottom:5px}
+.hand-panel h2{font-size:.83rem;margin:0}
+.hand-panel .row small{font-size:.66rem}
+.hand{gap:4px;padding:5px 0 3px}
+.hand button{flex:0 0 calc((100% - 16px)/5);min-width:0;min-height:87px;border-radius:8px}
+.hand-card{height:87px;padding:4px 3px;gap:2px}
+.hand-card .swatch{height:25px;font-size:.79rem}
+.hand-card small{font-size:.55rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hand-card strong{font-size:.68rem}
+.hand-card .small{font-size:.57rem;line-height:1.1}
+.hand-panel .hint{font-size:.66rem;line-height:1.2;margin:2px 0 0}
+@media(max-width:370px){.battle{padding:4px}.slots{gap:8px}.slot{flex-basis:92px;width:92px}.message{font-size:.72rem}.message .tap{font-size:.55rem}.bcard .energy{font-size:.51rem}}
+@media(max-height:710px){.field{height:119px}.field.player-field .slots{top:31px}.slot,.bcard,.empty-slot{height:86px}.enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(29px)}.player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-29px)}.swatch{height:22px}.center-line{height:32px}.hand button{min-height:78px}.hand-card{height:78px}.hand-card .swatch{height:20px}.message[data-zone=enemy-front]{top:70px}.message[data-zone=player-front]{bottom:70px}}
+
+/* v0.4: taller and more legible cards, retain one-screen board + hand */
+.field{height:146px}
+.field.enemy-field .slots{top:3px}
+.field.player-field .slots{top:38px}
+.slot,.bcard,.empty-slot{height:106px}
+.bcard{padding:5px 3px;gap:2px}
+.bcard .kind{font-size:.69rem;line-height:1.12}
+.bcard .hp{font-size:.81rem;line-height:1.16}
+.bcard .energy{font-size:.66rem;line-height:1.16}
+.direction{font-size:.63rem;line-height:1.1}
+.bcard .swatch{height:30px;font-size:1.05rem;flex-shrink:0}
+.empty-slot{font-size:.81rem}
+.front-label{font-size:.69rem}
+.enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(44px)}
+.player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-44px)}
+.message[data-zone=enemy-front]{top:91px}
+.message[data-zone=player-front]{bottom:91px}
+.hand button{min-height:96px}
+.hand-card{height:96px;padding:5px 3px;gap:2px}
+.hand-card .swatch{height:28px;font-size:.9rem}
+.hand-card small{font-size:.66rem;line-height:1.12}
+.hand-card strong{font-size:.77rem}
+.hand-card .small{font-size:.67rem;line-height:1.12}
+@media(max-width:370px){
+ .bcard .kind{font-size:.63rem}
+ .bcard .hp{font-size:.75rem}
+ .bcard .energy{font-size:.61rem}
+ .direction{font-size:.57rem}
+ .hand-card small{font-size:.59rem}
+ .hand-card .small{font-size:.6rem}
+}
+@media(max-height:710px){
+ .field{height:132px}
+ .field.player-field .slots{top:34px}
+ .slot,.bcard,.empty-slot{height:99px}
+ .bcard{padding:3px 2px;gap:1px}
+ .bcard .swatch{height:26px}
+ .enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(36px)}
+ .player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-36px)}
+ .message[data-zone=enemy-front]{top:78px}
+ .message[data-zone=player-front]{bottom:78px}
+ .hand button{min-height:90px}
+ .hand-card{height:90px}
+ .hand-card .swatch{height:25px}
+}
+
+/* v0.5: portrait field cards matching hand-card proportions; text sizes unchanged */
+.front-label{display:none}
+.center-line{height:48px}
+.field{height:190px}
+.slots{width:min(100%,310px);left:50%;right:auto;transform:translateX(-50%);gap:11px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.field.enemy-field .slots{top:4px}
+.field.player-field .slots{top:57px}
+.slot{height:auto;aspect-ratio:2 / 3}
+.bcard,.empty-slot{height:100%}
+.bcard{justify-content:flex-start}
+.enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(50%)}
+.player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-50%)}
+.message[data-zone=enemy-front]{top:138px}
+.message[data-zone=player-front]{bottom:138px}
+@media(max-width:370px){
+ .slots{width:min(100%,294px);gap:8px}
+ .field{height:182px}
+ .field.player-field .slots{top:54px}
+ .message[data-zone=enemy-front]{top:126px}
+ .message[data-zone=player-front]{bottom:126px}
+}
+@media(max-height:710px){
+ .field{height:176px}
+ .field.player-field .slots{top:49px}
+ .message[data-zone=enemy-front]{top:120px}
+ .message[data-zone=player-front]{bottom:120px}
+}
+/* v0.6: streamlined battle messaging */
+.center-line{background:#0e25355c;border-color:#93b6cc55}
+.message.done{background:#214b38;border-color:#b5efb0}
+.message.done .tap{font-size:.78rem;font-weight:850;color:#e6ffe4;white-space:normal;text-align:right}
+@media(max-width:370px){.message.done .tap{font-size:.7rem}}
+
+/* v0.8: vertical alignment fix */
+.field{height:198px}
+.field.enemy-field .slots{top:0 !important; bottom:auto !important}
+.field.player-field .slots{top:auto !important; bottom:0 !important}
+.center-line{height:28px}
+.enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(46px)}
+.player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-46px)}
+.field.player-field{margin-bottom:4px}
+.battle > .team-bar:last-of-type{margin-top:8px;padding-top:4px}
+
+
+/* v0.9 controls. Preserve v0.8 board geometry. */
+.bcard.selectable,.empty-slot.selectable{cursor:pointer;touch-action:manipulation}
+.bcard.picked,.empty-slot.picked{outline:3px solid #ffe28d;outline-offset:2px}
+.hand-card.sel{outline:3px solid #ffe28d;outline-offset:-2px}
+.action-caption{grid-column:1 / -1;font-size:.79rem;color:#e4edf6;margin:4px 0}
+.actions button:disabled{opacity:.36;filter:grayscale(1);cursor:not-allowed}
+#modalButtons{grid-template-columns:repeat(2,minmax(0,1fr))}
+#modalButtons .full{grid-column:1 / -1}
+#detailContent{margin:12px 0;line-height:1.6}
+#detailContent .detail-card{border:2px solid #a5bfd0;border-radius:10px;padding:12px;background:#1b2e40}
+#detailContent .detail-line{padding:6px 0;border-bottom:1px solid #39566a;font-size:.88rem}
+#detailContent .detail-swatch{border-radius:8px;color:#14202b;text-align:center;font-weight:900;padding:10px;font-size:1.3rem}
+#overlay:not(.show){pointer-events:none}
+
+/* v0.10: restore v0.8 field-card size */
+.field{height:198px !important}
+.field.enemy-field .slots{top:0 !important}
+.field.player-field .slots{top:auto !important;bottom:0 !important}
+.slot,.bcard,.empty-slot{height:144px !important}
+.slot{height:144px !important}
+.bcard{height:144px !important}
+.empty-slot{height:144px !important}
+.enemy-field .bcard.front,.enemy-field .empty-slot.front{transform:translateY(46px) !important}
+.player-field .bcard.front,.player-field .empty-slot.front{transform:translateY(-46px) !important}
+.center-line{height:28px !important}
+.message[data-zone=enemy-front]{top:103px !important}
+.message[data-zone=player-front]{bottom:103px !important}
+.message[data-zone=enemy-bench]{top:18px !important}
+.message[data-zone=player-bench]{bottom:18px !important}
+
+
+/* v0.11: modal-first controls, remove persistent action menu. */
+#overlay{background:#101a26 !important}
+#modal{width:min(100%,410px);box-shadow:0 14px 45px #0009}
+#modalButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+#modalButtons button{min-height:54px;line-height:1.25}
+#modalText{font-size:.87rem;color:#d2e2ed;margin:8px 0}
+.turn-control{display:flex;justify-content:center;padding:3px 8px 7px}
+.turn-control button{width:min(100%,320px);font-weight:750}
+.turn-control:empty{display:none}
+
+/* v0.12: drag and drop; preserve v0.8/v0.10 field card geometry */
+#hand [data-drag-hand],#playerSlots [data-slot]{touch-action:none;user-select:none;-webkit-user-select:none}
+#dragGhost{position:fixed;z-index:99;pointer-events:none;transform:translate(-50%,-50%);background:#2b455e;border:2px solid #ffe28d;border-radius:12px;padding:16px 12px;min-width:94px;min-height:78px;display:flex;justify-content:center;align-items:center;font-weight:800;box-shadow:0 7px 25px #000b;opacity:.96}
+.drag-valid .bcard,.drag-valid .empty-slot{outline:2px dashed #8ac9ea;outline-offset:2px}
+.drag-target .bcard,.drag-target .empty-slot{outline:4px solid #ffe28d;outline-offset:2px}
+body.dragging #hand{overflow-x:visible}
+
+/* v0.13: color from energies, retain v0.12 board geometry */
+.bcard .energy{font-size:.64rem;letter-spacing:-.03em}
+.victory-setting{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 8px;color:#f5f8fd;font-size:.87rem}
+.victory-setting select{background:#28435b;color:#fff;border:1px solid #84a9c5;border-radius:10px;padding:7px 12px;font:inherit;min-height:44px}
+.victory-setting select:focus-visible{outline:3px solid #ffdf77;outline-offset:2px}
+
+/* v0.17: responsive computer / tablet layout. Mobile (<= 799px) unchanged. */
+@media (min-width: 800px) {
+ body {max-width: 960px;padding: 24px 22px 70px;}
+ .battle {max-width: 800px;margin: 0 auto;padding: 12px 18px 16px;}
+ .team-bar {font-size: .88rem;min-height: 34px;}
+ .team-bar strong {font-size: 1rem;}
+ .pill {font-size: .8rem;padding: 5px 12px;}
+ .field {height: 225px !important;}
+ .slots {width: 376px;gap: 12px;}
+ .slot {flex: 0 0 112px;width:112px;max-width:112px;height:168px !important;}
+ .bcard,.empty-slot {height:168px !important;}
+ .bcard {padding: 11px 6px;gap: 5px;}
+ .bcard .kind {font-size:.83rem;}
+ .bcard .hp {font-size: .93rem;}
+ .bcard .energy {font-size: .76rem;}
+ .bcard .swatch {height: 43px;font-size: 1.15rem;}
+ .empty-slot {font-size: .88rem;}
+ .enemy-field .bcard.front,.enemy-field .empty-slot.front {transform:translateY(46px) !important;}
+ .player-field .bcard.front,.player-field .empty-slot.front {transform:translateY(-46px) !important;}
+ .center-line {height: 32px !important;}
+ .message {max-width: 600px;left:50%;right:auto;transform:translateX(-50%);width:calc(100% - 20px);font-size: .94rem;}
+ .message[data-zone=enemy-front] {top: 130px !important;}
+ .message[data-zone=player-front] {bottom: 130px !important;}
+ .hand-panel {max-width: 800px;margin: 12px auto;}
+ .hand {justify-content:flex-start;gap: 10px;padding:10px 3px;}
+ .hand button {flex: 0 0 132px;min-height: 118px;}
+ .hand-card {height:118px;padding:8px 6px;gap:4px;}
+ .hand-card .swatch {height:35px;}
+ .hand-card small,.hand-card .small {font-size:.76rem;}
+ .hand-card strong {font-size:.87rem;}
+ .hand-panel h2 {font-size:1rem;}
+ .hand-panel .hint {font-size:.78rem;}
+ .turn-control {max-width:800px;margin:auto;}
+ .panel:not(.hand-panel) {max-width:800px;margin:12px auto;}
+ #modal {width:min(100%,480px);}
+}
+@media (hover:hover) and (pointer:fine) {
+ #hand button:hover:not(:disabled),#playerSlots [data-slot]:hover {filter:brightness(1.12);}
+}
+</style></head><body>
+<div class="logo-banner"><img src="paremon_logo_center_crop2.png" alt="パレモンのロゴ案（中央のニンテンドー純正風デザイン）"></div>
+<div id="status" class="sr-only" role="status" aria-live="polite"></div>
+<section class="battle" aria-label="対戦フィールド">
+ <div class="team-bar"><strong>相手 AI　↓</strong><span id="opScore" class="pill"></span><span id="opDeck" class="muted"></span></div>
+ <div id="battleBody" class="battle-body">
+  <div class="field enemy-field"><div id="enemySlots" class="slots"></div><div class="front-label">▼ 相手の前衛</div></div>
+  <div class="center-line" aria-hidden="true"></div>
+  <div class="field player-field"><div class="front-label">▲ あなたの前衛</div><div id="playerSlots" class="slots"></div></div>
+  <button id="message" class="message" data-zone="center" aria-live="assertive" aria-label="メッセージを確認して次に進む"><span id="messageText"></span><span id="messageTap" class="tap">タップして進む ▶</span></button>
+ </div>
+ <div class="team-bar"><strong>あなた　↑</strong><span id="myScore" class="pill"></span><span id="myDeck" class="muted"></span></div>
+</section>
+<section class="panel hand-panel"><div class="row"><h2>手札 <span id="handCount" class="pill"></span></h2><small>横にスライド可能</small></div><div id="hand" class="hand"></div><div id="handHint" class="hint"></div></section>
+<div id="turnControl" class="turn-control" aria-live="polite"></div>
+<section class="panel"><button id="restart" type="button">最初から</button><details><summary>対戦履歴を開く</summary><div id="log" class="history"></div></details></section>
+<section class="panel rules"><details><summary>ルールと仮設定</summary><p>確定事項：山札30枚、初期手札5枚、毎ターン1枚補充、前衛1体＋控え最大2体、基本エネルギー付与1ターン1枚、攻撃後ターン終了、先攻初回は攻撃不可、弱点側のダメージ2倍、対戦開始前に選んだ2〜4体撃破、または相手の場が全滅で勝利。通常交代はエネルギー1枚を捨て1ターン1回。進化・特殊状態は初期試作には入れません。</p><p><strong>仮ルール：</strong>全モンスターHP10、基本攻撃2（任意色エネルギー1枚）、強攻撃3（自色1枚＋任意色1枚）。色調整で前衛の属性を一時変更、増強で攻撃+1。デッキ配分はモンスター12、エネルギー12、色調整3、増強3。混色の科学的な計算は未実装です。属性の相性は紫→青→緑→黄→橙→赤→紫。エネルギー0枚は無色。最初に付けたエネルギーの色がベースカラーです。同色の追加エネルギーは2枚分、異色は1枚分、補色は付与できません。色調整では一時的にベースカラーを変更し、同色はすべて2枚分、補色は0枚分として再計算します。</p><p>色は必ず色名と数値でも表示。音声・点字機器での実機確認は未実施です。</p></details></section>
+<div id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div id="modal"><h2 id="modalTitle"></h2><p id="modalText"></p><div id="detailContent"></div><div id="modalButtons"></div></div></div>
+<script>
+'use strict';
+const NAME=['赤','橙','黄','緑','青','紫'],COLOR=['#da454a','#ed9242','#e2c94b','#4ca870','#468ad0','#9a66c8'];
+const colorName=n=>n===null||n===undefined?'無色':NAME[n];
+const colorHex=n=>n===null||n===undefined?'#8f9da6':COLOR[n];
+const complementary=(a,b)=>a!==null&&b!==null&&(a+3)%6===b;
+const $=id=>document.getElementById(id);let game,selected=null,fieldSelected=null,pendingAttack=null,mode=null,uid=0,notice=null,queue=[],onEmpty=null;let dragState=null,suppressCardClickUntil=0;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fresh=(kind,color)=>({id:++uid,kind,color});
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeDeck(){let d=[];for(let i=0;i<6;i++)d.push(fresh('mon',i),fresh('mon',i),fresh('en',i),fresh('en',i));for(let i=0;i<3;i++)d.push(fresh('tune',i*2),fresh('boost',i*2+1));return shuffle(d)}
+function player(){return {deck:makeDeck(),hand:[],active:null,bench:[],kos:0,attached:false,retreated:false,tuned:false,boosted:false,tuneColor:null,bonus:0}}
+function draw(p,n=1){for(let i=0;i<n;i++){if(!p.deck.length)return false;p.hand.push(p.deck.pop())}return true}
+function mulligan(p){let n=0;do{p.deck.push(...p.hand);p.hand=[];shuffle(p.deck);draw(p,5);n++}while(!p.hand.some(x=>x.kind==='mon')&&n<100);return n-1}
+function mon(c){return {id:c.id,species:c.species,color:null,damage:0,energy:[]}}
+function place(p,id,front){let i=p.hand.findIndex(c=>c.id===id&&c.kind==='mon');if(i<0||front&&p.active||!front&&p.bench.length===2)return false;let c=mon(p.hand.splice(i,1)[0]);if(front)p.active=c;else p.bench.push(c);return true}
+function take(p,id){let i=p.hand.findIndex(c=>c.id===id);return i<0?null:p.hand.splice(i,1)[0]}
+function who(p){return p===game.me?'あなた':'相手'}
+// The original card color stays as artwork metadata; monster battle color comes from energy.
+function base(m){return m?.energy.length?m.energy[0]:null}
+function activeColor(m,p){return m&&m===p.active&&p.tuneColor!==null?p.tuneColor:base(m)}
+function eff(p){return activeColor(p.active,p)}
+function canAttach(m,c,p){return !!m&&!complementary(p?activeColor(m,p):base(m),c)}
+// Counts are recalculated, never stored. During tuning ALL matching cards count as two.
+function energyCounts(m,p){
+ const counts=[0,0,0,0,0,0];if(!m)return counts;
+ const b=activeColor(m,p),tuned=m===p.active&&p.tuneColor!==null;
+ m.energy.forEach((col,i)=>{
+  if(complementary(b,col))return;
+  counts[col]+=col===b?(tuned||i>0?2:1):1;
+ });return counts;
+}
+function energyTotal(m,p){return energyCounts(m,p).reduce((a,b)=>a+b,0)}
+function cost(p,strong){
+ if(!p.active)return false;
+ const counts=energyCounts(p.active,p),total=counts.reduce((a,b)=>a+b,0);
+ if(!strong)return total>=1;
+ const b=eff(p);return b!==null&&counts[b]>=1&&total>=2;
+}
+function log(s){game.logs.unshift(s);game.logs.length=Math.min(game.logs.length,32)}
+function evt(zone,text,fn){return {zone:zone.startsWith('enemy-')?'enemy-front':zone,text,fn}}
+function showNext(){if(notice)return;if(!queue.length){let cb=onEmpty;onEmpty=null;if(cb)cb();else render();return}let x=queue.shift();if(x.fn)x.fn();log(x.text);notice={zone:x.zone,text:x.text};render()}
+function sequence(events,after){if(notice||queue.length)throw Error('Message sequence still active');queue=events.slice();onEmpty=after||null;showNext()}
+function pushEvents(events,after){queue.push(...events);if(after)onEmpty=after;if(!notice)showNext()}
+function acknowledge(){if(!notice)return;if(game.over){reset();return}notice=null;showNext()}
+function win(p,reason){game.over=true;game.turn='end';return evt('center',`${who(p)}の勝利！ ${reason}`)}
+// Apply knockout outcome only when each message is acknowledged; victory is set when the victory message appears.
+function resolveAttackSafe(p,strong){let target=p===game.me?game.ai:game.me;if(!cost(p,strong)||!target.active)return[];let att=eff(p),def=target.active,base=(strong?3:2)+p.bonus,weak=att!==null&&activeColor(def,target)!==null&&att===(activeColor(def,target)+1)%6,dmg=base*(weak?2:1);p.bonus=0;let events=[evt(p===game.me?'player-front':'enemy-front',`${who(p)}の${strong?'強攻撃':'基本攻撃'}：${base}${weak?' × 弱点2':''} = ${dmg}ダメージ`,()=>{def.damage+=dmg})];if(def.damage+dmg>=10){const willWin=p.kos+1>=game.targetKos||target.bench.length===0;events.push(evt('center',`${who(p)}が1体撃破！ ${p.kos+1}/${game.targetKos}`,()=>{target.active=null;p.kos++}));if(willWin)events.push(evt('center',`${who(p)}の勝利！ ${p.kos+1>=game.targetKos?game.targetKos+'体撃破':'相手の控えがいない'}`,()=>{game.over=true;game.turn='end'}));else if(target===game.ai)events.push(evt('enemy-front','相手は控えから新しい前衛を選択。',()=>{target.active=target.bench.shift()}));else events.push(evt('center','あなたの前衛が倒れた。控えから次を選択。',()=>{game.promotion=true}))}return events}
+function reset(){uid=0;game={me:player(),ai:player(),turn:'setup',step:0,targetKos:2,over:false,promotion:false,logs:[]};selected=null;fieldSelected=null;pendingAttack=null;mode=null;queue=[];notice=null;onEmpty=null;let am=mulligan(game.me),bm=mulligan(game.ai);let ids=game.ai.hand.filter(x=>x.kind==='mon').map(x=>x.id);place(game.ai,ids[0],true);ids.slice(1,3).forEach(id=>place(game.ai,id,false));log('新しい対戦。あなたが先攻。');if(am||bm)log(`引き直し：あなた${am}回、相手${bm}回`);render()}
+function begin(){if(!game.me.active||![2,3,4].includes(game.targetKos))return;game.turn='player';game.step=0;draw(game.me);sequence([evt('center','対戦開始！ あなたが先攻。最初のターンは攻撃できません。'),evt('player-bench','山札から1枚引きました。')])}
+function aiPlan(){let p=game.ai,steps=[];steps.push(evt('enemy-bench','相手のターン。山札から1枚引いた。',()=>{if(!draw(p)){game.over=true;game.turn='end';game.deckLoss=true}}));let aiMoves=()=>{if(game.over)return [evt('center','あなたの勝利！ 相手は山札からカードを引けませんでした。')];const rest=[];for(let c of [...p.hand.filter(x=>x.kind==='mon')])if(p.bench.length<2){let id=c.id;rest.push(evt('enemy-bench','相手が控えにモンスターを配置。',()=>place(p,id,false)));if(p.bench.length+rest.length>=2)break}
+let ens=p.hand.filter(x=>x.kind==='en');if(ens.length){let chosen=ens.find(c=>p.active&&canAttach(p.active,c.color,p)&&c.color===base(p.active))||ens.find(c=>p.active&&canAttach(p.active,c.color,p));if(chosen)rest.push(evt('enemy-front','相手が前衛にエネルギーを1枚付けた。',()=>{if(p.active&&canAttach(p.active,chosen.color,p)){take(p,chosen.id);p.active.energy.push(chosen.color)}}))}
+let boost=p.hand.find(x=>x.kind==='boost');if(boost)rest.push(evt('enemy-front','相手が増強カードを使用。次の攻撃+1。',()=>{take(p,boost.id);p.bonus=1}));let tune=p.hand.find(x=>x.kind==='tune');if(tune&&p.active?.energy.length&&game.me.active){let their=base(game.me.active);let desired=their===null?base(p.active):(their+1)%6;if(base(p.active)!==desired)rest.push(evt('enemy-front',`相手が色調整で前衛を一時的に${NAME[desired]}属性へ変更。`,()=>{take(p,tune.id);p.tuneColor=desired}))}
+rest.push(evt('enemy-front','相手は攻撃を準備している。'));return rest};
+sequence(steps,()=>{if(game.over){sequence([evt('center','あなたの勝利！ 相手の山札切れ。')]);return}const moves=aiMoves();sequence(moves,()=>{if(game.over){render();return}const strong=cost(p,true),basic=cost(p,false);const battle=strong||basic?resolveAttackSafe(p,strong):[evt('enemy-front','相手は攻撃できず、ターン終了。')];sequence(battle,()=>{p.tuneColor=null;p.bonus=0;if(game.over){render();return}if(game.promotion){game.afterPromotion=afterAi;render();return}afterAi()})})})}
+function afterAi(){if(game.over)return;game.turn='player';game.step++;let m=game.me;m.attached=false;m.retreated=false;m.tuned=false;m.boosted=false;m.bonus=0;m.tuneColor=null;selected=null;fieldSelected=null;pendingAttack=null;mode=null;if(!draw(m)){game.over=true;game.turn='end';sequence([evt('center','相手の勝利！ あなたは山札から引けませんでした。')]);return}sequence([evt('player-bench',`あなたのターン ${game.step+1}回目。山札から1枚引いた。`)])}
+function endPlayer(){if(game.over||game.promotion)return;game.me.tuneColor=null;game.me.bonus=0;selected=null;fieldSelected=null;pendingAttack=null;mode=null;game.turn='ai';render();aiPlan()}
+function actAttack(strong){if(game.step===0||!cost(game.me,strong))return;let events=resolveAttackSafe(game.me,strong);sequence(events,()=>{if(game.over)return;if(game.promotion){game.afterPromotion=endPlayer;render();return}endPlayer()})}
+function doMessage(zone,text,action){if(action)action();sequence([evt(zone,text)])}
+function button(t,fn,disabled=false,primary=false){let b=document.createElement('button');b.type='button';b.textContent=t;b.disabled=disabled;if(primary)b.classList.add('primary');b.addEventListener('click',fn);return b}
+function add(t,fn,disabled=false,primary=false){$('actions').append(button(t,fn,disabled||!!notice,primary))}
+function cardName(c){return c.kind==='mon'?'モンスター':c.kind==='en'?'エネルギー':c.kind==='tune'?'色調整':'増強'}
+function monView(m,p,front,side){if(!m)return `<div class="empty-slot ${front?'front':''}">${front?'前衛なし':'空き'}</div>`;let c=activeColor(m,p),total=energyTotal(m,p);return `<div class="bcard ${front?'front':''}" aria-label="${esc((side==='enemy'?'相手':'あなた')+(front?'前衛':'控え')+' '+monsterName(m)+' '+colorName(c)+' HP'+(10-m.damage)+'/10 エネルギー実'+m.energy.length+'枚、有効'+total+'枚分')}"><div class="kind">${front?'★ 前衛':'控え'}・${colorName(c)}</div><div class="monster-art-panel" style="background:${artBg(c)}"><img src="${artSrc(m,c)}" alt="${esc(monsterName(m))}"><span class="monster-badge">${colorName(c)}</span></div><span class="monster-name">${esc(monsterName(m))}</span><div class="hp">HP ${Math.max(0,10-m.damage)}/10</div><div class="energy" title="${esc(m.energy.map(n=>NAME[n]).join('・'))}">E ${m.energy.length}枚→${total}分 ${m.energy.length?m.energy.map(n=>NAME[n][0]).join(''):''}</div></div>`}
+function slots(p,side){return [p.bench[0]||null,p.active,p.bench[1]||null].map((m,i)=>{const allowed=side==='player'&&!notice&&!game.over&&game.turn!=='ai'&&!game.promotion;const id=side+':'+i;return `<div class="slot" data-slot="${id}" role="${allowed?'button':'group'}" tabindex="${allowed?'0':'-1'}" aria-label="${side==='enemy'?'相手':'あなた'}の${i===1?'前衛':'控え'} ${m?colorName(activeColor(m,p)):'空き'}"><div class="${allowed?'selectable':''} ${fieldSelected===id?'picked':''}">${monView(m,p,i===1,side)}</div></div>`}).join('')}
+function handView(c){let info=c.kind==='mon'?'HP10／無色':c.kind==='en'?'付与1枚':c.kind==='tune'?'前衛の色変更':'攻撃 +1';if(c.kind==='mon')return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="monster-art-panel" style="background:${artBg(null)}"><img src="${artSrc(c,null)}" alt="${esc(monsterName(c))}"><span class="monster-badge">無色</span></div><strong class="monster-name">${esc(monsterName(c))}</strong><span class="small">${info}</span></div>`;return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="swatch" style="background:${c.kind==='boost'?'#8595a6':COLOR[c.color]}">${c.kind==='boost'?'+1':NAME[c.color]}</div><strong>${c.kind==='boost'?'増強':NAME[c.color]}</strong><span class="small">${info}</span></div>`}
+function actionLabel(t){let div=document.createElement('div');div.className='action-caption';div.textContent=t;$('actions').append(div)}
+function disabledHint(buttonEl,reason){if(buttonEl.disabled){buttonEl.title=reason;buttonEl.setAttribute('aria-label',buttonEl.textContent+'（使用不可：'+reason+'）')}}
+function action(t,fn,disabled=false,primary=false,reason='現在は使用できません'){let b=button(t,fn,disabled,primary);disabledHint(b,reason);$('actions').append(b);return b}
+function render(){
+ const m=game.me,a=game.ai;
+ $('enemySlots').innerHTML=slots(a,'enemy');$('playerSlots').innerHTML=slots(m,'player');
+ $('opScore').textContent=`撃破 ${a.kos}/${game.targetKos}`;$('myScore').textContent=`撃破 ${m.kos}/${game.targetKos}`;
+ $('opDeck').textContent=`山札${a.deck.length}／手札${a.hand.length}`;
+ $('myDeck').textContent=`山札${m.deck.length}／手札${m.hand.length}`;
+ $('handCount').textContent=`${m.hand.length}枚`;$('hand').replaceChildren();
+ for(let c of m.hand){let b=button('',()=>{
+  if(performance.now()<suppressCardClickUntil)return;
+  if(notice||game.over||game.promotion||game.turn==='ai')return;
+  selected=c.id;fieldSelected=null;pendingAttack=null;mode=null;render();
+  openHandMenu(c);
+ },!!notice||game.over||game.promotion||game.turn==='ai');
+  b.innerHTML=handView(c);b.setAttribute('aria-label',`${c.kind==='mon'?monsterName(c):cardName(c)} ${c.kind==='boost'?'攻撃力プラス1':c.kind==='mon'?'モンスター':NAME[c.color]} ${selected===c.id?'選択中':''}`);
+  b.setAttribute('aria-pressed',String(selected===c.id));b.dataset.dragHand=String(c.id);b.draggable=false;$('hand').append(b)
+ }
+ $('log').innerHTML=game.logs.map(x=>`<div>${esc(x)}</div>`).join('');
+ let n=$('message');document.body.classList.toggle('locked',!!notice);
+ if(notice){n.classList.add('show');n.dataset.zone=notice.zone;$('messageText').textContent=notice.text;
+   const finished=game.over;$('messageTap').textContent=finished?'次の対戦に進む ▶':'タップして進む ▶';
+   n.setAttribute('aria-label',finished?'次の対戦に進む':'メッセージを確認して次に進む');n.classList.toggle('done',finished)
+ }else{n.classList.remove('show');n.classList.remove('done')}
+ $('turnControl').replaceChildren();let card=m.hand.find(c=>c.id===selected);
+ $('handHint').textContent='タップで操作メニュー／長押しせずドラッグして配置・付与できます。';
+ if(notice){$('status').textContent='フィールドのメッセージをタップして次に進みます。';return}
+ if(game.over){$('status').textContent='対戦終了。メッセージをタップして再戦します。';return}
+ if(game.promotion){
+   $('status').textContent='控えから新しい前衛を選びます。';
+   if(!$('overlay').classList.contains('show')){
+     modal('新しい前衛を選ぶ','',m.bench.map((c,i)=>[`${colorName(base(c))}（HP${10-c.damage}）`,()=>{
+       m.active=m.bench.splice(i,1)[0];game.promotion=false;let done=game.afterPromotion;game.afterPromotion=null;
+       sequence([evt('player-front','あなたは控えを新しい前衛に出した。')],done)
+     },false]),false);
+   }
+   return;
+ }
+ if(game.turn==='ai'){$('status').textContent='相手のターン。メッセージを順に進めてください。';return}
+ if(game.turn==='setup'){
+   $('status').textContent='手札のモンスターを選んで配置し、対戦開始を押してください。';
+   const setting=document.createElement('div');setting.className='victory-setting';
+   const label=document.createElement('label');label.htmlFor='victoryTarget';label.textContent='勝利条件';
+   const select=document.createElement('select');select.id='victoryTarget';select.setAttribute('aria-label','必要な撃破数');
+   for(const count of [2,3,4]){
+     const opt=document.createElement('option');opt.value=String(count);opt.textContent=count+'体撃破';
+     select.append(opt);
+   }
+   select.value=String(game.targetKos);
+   select.addEventListener('change',()=>{game.targetKos=Number(select.value);render()});
+   setting.append(label,select);$('turnControl').append(setting);
+   let b=button('対戦開始',begin,!m.active,true);$('turnControl').append(b);return;
+ }
+ $('status').textContent=`あなたのターン ${game.step+1}回目。手札か場のカードをタップしてください。`;
+ $('turnControl').append(button('攻撃せずターン終了',()=>modal('ターンを終了','攻撃せず相手に手番を渡しますか？',[
+   ['ターン終了',()=>sequence([evt('center','あなたはターンを終了した。')],endPlayer),false]
+ ]),false));
+}
+function openFieldMenu(pos){
+ const p=game.me, monster=pos===1?p.active:p.bench[pos===0?0:1];
+ if(!monster){modal('空きスロット','手札のモンスターを選んで配置してください。',[],true);return}
+ const choices=[['詳細',()=>showDetails(monster,'field',pos===1),false]];
+ if(game.turn==='player'&&pos===1){
+   choices.push(['ワザ①：攻撃2',()=>selectAttack(false),game.step===0||!cost(p,false)]);
+   choices.push(['ワザ②：攻撃3',()=>selectAttack(true),game.step===0||!cost(p,true)]);
+   choices.push(['前衛と控えの交代',()=>retreat(),p.retreated||!p.active?.energy.length||!p.bench.length]);
+ }else if(game.turn==='player'){
+   choices.push(['前衛と交代',()=>retreat(pos===0?0:1),p.retreated||!p.active?.energy.length]);
+ }
+ choices.push(['戻る',()=>{fieldSelected=null;render()},false]);
+ modal(pos===1?'前衛の操作':`控え${pos===0?'①':'②'}の操作`,'',choices,false);
+}
+function openHandMenu(card){
+ if(selected!==card.id)return;
+ modal(cardName(card), '', [
+  ['使う',()=>{ if(canUseHand(card)) useHand(card) }, !canUseHand(card)],
+  ['詳細',()=>showDetails(card,'hand'), false],
+  ['戻る',()=>{ selected=null; render(); }, false]
+ ], false);
+}
+
+function handBlockedReason(card){let m=game.me;
+ if(card.kind==='mon')return m.bench.length>=2&&!!m.active?'控えが埋まっています':'前衛または控えに空きが必要です';
+ if(card.kind==='en')return m.attached?'今ターンはエネルギーを付与済み':'付与するモンスターがいません';
+ if(card.kind==='boost')return m.boosted?'今ターンは増強済み':'前衛がいません';
+ if(card.kind==='tune')return m.tuned?'今ターンは色調整済み':'前衛にエネルギーがありません';return '使用できません'
+}
+function canUseHand(card){let m=game.me;
+ if(card.kind==='mon')return !m.active||m.bench.length<2;
+ if(game.turn!=='player')return false;
+ if(card.kind==='en')return !m.attached&&[m.active,...m.bench].some(x=>canAttach(x,card.color,m));
+ if(card.kind==='boost')return !m.boosted&&!!m.active;
+ if(card.kind==='tune')return !m.tuned&&!!m.active?.energy.length;
+ return false;
+}
+function useHand(card){if(!game.me.hand.some(c=>c.id===card.id)||!canUseHand(card))return;
+ if(card.kind==='boost'){
+  take(game.me,card.id);game.me.boosted=true;game.me.bonus=1;selected=null;fieldSelected=null;
+  doMessage('player-front','あなたが増強カードを使用。次の攻撃+1。');return;
+ }
+ if(card.kind==='tune'){colorPopup(n=>{
+  if(!game.me.hand.some(c=>c.id===card.id)||!game.me.active?.energy.length)return;
+  take(game.me,card.id);game.me.tuned=true;game.me.tuneColor=n;selected=null;fieldSelected=null;
+  doMessage('player-front',`前衛の属性を一時的に${NAME[n]}へ変更。`)
+ });return}
+ let p=game.me;
+ let available=[
+   {label:'前衛',monster:p.active,free:!p.active},
+   {label:'控え①',monster:p.bench[0],free:!p.bench[0]},
+   {label:'控え②',monster:p.bench[1],free:!p.bench[1]}
+ ];
+ const choices=available.map((item,i)=>{
+  const valid=card.kind==='mon'?item.free&&(i===0||!!p.active&&p.bench.length===i-1):canAttach(item.monster,card.color,p);
+  return [item.label+(item.monster?'・'+colorName(base(item.monster)):item.free?'・空き':''),()=>{
+   if(!valid)return;
+   if(card.kind==='mon'){
+     let ok=place(p,card.id,i===0);if(ok){selected=null;fieldSelected=null;doMessage(i===0?'player-front':'player-bench',`あなたが${item.label}にモンスターを配置。`)}
+   }else{
+     let target=i===0?p.active:p.bench[i-1];if(!target||p.attached||!canAttach(target,card.color,p))return;
+     take(p,card.id);target.energy.push(card.color);p.attached=true;selected=null;fieldSelected=null;
+     doMessage(i===0?'player-front':'player-bench',`あなたが${item.label}に${NAME[card.color]}エネルギーを1枚付与。`)
+   }
+  },!valid]
+ });
+ modal('使用する対象',card.kind==='mon'?'モンスターを配置する場所を選んでください。':'エネルギーを付ける対象を選んでください。',choices);
+}
+function selectAttack(strong){if(game.turn!=='player'||game.step===0||!cost(game.me,strong))return;
+ modal('攻撃の最終確認',`ワザ${strong?'②・強攻撃（攻撃3）':'①・基本攻撃（攻撃2）'}を使います。攻撃するとターンが終了します。`,[
+  ['攻撃する',()=>{fieldSelected=null;pendingAttack=null;actAttack(strong)},false],
+  ['戻る',()=>{render()},false]
+ ],false);
+}
+function showDetails(item,kind,front=false,owner=game.me){
+ const title=kind==='hand'?cardName(item):front?'前衛モンスター':'控えモンスター';
+ const isMon=kind==='field'||item.kind==='mon';
+ const color=kind==='field'?activeColor(item,owner):item.kind==='mon'?null:item.color;
+ let rows=[];
+ if(isMon){rows=[`種族：${monsterName(item)}`,`HP：${kind==='field'?10-item.damage:10}/10`,`属性：${colorName(color)}`,
+   `ワザ① 基本攻撃：2ダメージ／必要：◇1`,
+   `ワザ② 強攻撃：3ダメージ／必要：自色1＋◇1`,
+   `弱点攻撃ではダメージ×2（6色の相性順）`];
+   if(kind==='field'){rows.push(`ベースカラー：${colorName(base(item))}／現在：${colorName(color)}`);rows.push(`付与エネルギー：実${item.energy.length}枚・有効${energyTotal(item,owner)}枚分（${item.energy.map(n=>NAME[n]).join('・')||'なし'}）`);rows.push(`有効内訳：${energyCounts(item,owner).map((n,i)=>n?NAME[i]+n:'').filter(Boolean).join('・')||'なし'}`)}
+ }else if(item.kind==='en')rows=[`色：${NAME[item.color]}`,`1ターンに1枚、前衛または控えに付与できます。`];
+ else if(item.kind==='boost')rows=[`次の攻撃の威力を＋1します。`,`同じターンの使用は1回まで。`];
+ else rows=[`前衛モンスターの属性をこのターンだけ変更します。`,`変更後の色を選択できます。`];
+ $('detailContent').innerHTML=`<div class="detail-card">${isMon?`<div class="detail-art"><div class="monster-art-panel" style="background:${artBg(color)}"><img src="${artSrc(item,color)}" alt="${esc(monsterName(item))}"><span class="monster-badge">${colorName(color)}</span></div></div>`:''}<div class="detail-swatch" style="background:${item.kind==='boost'?'#8595a6':colorHex(color)}">${item.kind==='boost'?'+1':colorName(color)}</div>${rows.map(r=>`<div class="detail-line">${esc(r)}</div>`).join('')}</div>`;
+ modal(title+'・詳細','表示中はすべての対戦操作が停止します。',[['閉じる',()=>{},false]],false);
+}
+function modal(title,txt,choices,withCancel=true){
+ $('modalTitle').textContent=title;$('modalText').textContent=txt;
+ if(!title.endsWith('・詳細'))$('detailContent').replaceChildren();
+ $('modalButtons').replaceChildren();
+ for(let [label,fn,disabled] of choices){let b=button(label,()=>{closeModal(false);fn()},!!disabled);if(choices.length===1)b.classList.add('full');$('modalButtons').append(b)}
+ if(withCancel){let b=button('戻る',closeModal);$('modalButtons').append(b)}
+ $('overlay').classList.add('show');
+}
+function closeModal(shouldRender=true){$('overlay').classList.remove('show');$('detailContent').replaceChildren();if(shouldRender)render()}
+function colorPopup(fn){modal('色調整：変更後の色','このターンだけ前衛のベースカラーを別の色に変更します。',NAME.map((v,i)=>[v,()=>fn(i),i===base(game.me.active)]))}
+function retreat(preferredIndex=null){
+ let p=game.me;if(p.retreated||!p.active?.energy.length||!p.bench.length)return;
+ const choices=p.bench.map((c,i)=>[`${colorName(base(c))}（HP${10-c.damage}）`,()=>{
+  modal('捨てるエネルギー','捨てるエネルギーを1枚選んでください。',p.active.energy.map((col,j)=>[`${NAME[col]}（${j+1}枚目）`,()=>{
+   modal('交代の最終確認',`前衛の${NAME[col]}エネルギーを1枚捨てて、${colorName(base(c))}を前衛にしますか？`,[
+    ['交代を確定',()=>{
+     if(p.retreated||!p.active||p.active.energy[j]!==col||p.bench[i]!==c)return;
+     p.active.energy.splice(j,1);let old=p.active;p.active=p.bench[i];p.bench[i]=old;p.retreated=true;p.tuneColor=null;
+     fieldSelected=null;selected=null;doMessage('player-front','あなたがエネルギーを1枚捨て、前衛を交代。');
+    },false]
+   ]);
+  },false]));
+ },false]);
+ if(preferredIndex!==null){if(choices[preferredIndex])choices[preferredIndex][1]();return;}
+ modal('交代する控え','交代するモンスターを選んでください。',choices);
+}
+
+/* Pointer Events handle Android touch and desktop mouse alike.
+   A quick tap keeps the existing central menu; movement starts drag. */
+function monsterAtSlot(pos){return pos===1?game.me.active:game.me.bench[pos===0?0:1]}
+function dragAllowed(source,card){
+ if(notice||game.over||game.promotion||$('overlay').classList.contains('show'))return false;
+ if(source==='hand')return (game.turn==='setup'||game.turn==='player')&&!!card;
+ return game.turn==='player'&&!!card;
+}
+function validDrop(ds,pos){
+ let p=game.me,target=monsterAtSlot(pos);
+ if(ds.source==='field'){
+  const from=Number(ds.key);
+  if(from===pos||!monsterAtSlot(from)||!target)return false;
+  return (from===1||pos===1)&&!p.retreated&&!!p.active?.energy.length;
+ }
+ const c=p.hand.find(x=>x.id===Number(ds.key));
+ if(!c||!canUseHand(c))return false;
+ if(c.kind==='mon')return !target&&(pos===1?!p.active:!!p.active&&p.bench.length=== (pos===0?0:1));
+ if(c.kind==='en')return !!target&&canAttach(target,c.color,p)&&game.turn==='player';
+ return pos===1&&!!p.active&&game.turn==='player';
+}
+function endDragVisual(){
+ document.querySelectorAll('.drag-target').forEach(x=>x.classList.remove('drag-target'));
+ document.querySelectorAll('.drag-valid').forEach(x=>x.classList.remove('drag-valid'));
+ document.getElementById('dragGhost')?.remove();
+ document.body.classList.remove('dragging');
+}
+function updateDragPosition(ds,x,y){
+ const ghost=$('dragGhost');if(ghost){ghost.style.left=x+'px';ghost.style.top=y+'px'}
+ document.querySelectorAll('#playerSlots [data-slot]').forEach(el=>{
+  const pos=Number(el.dataset.slot.split(':')[1]);
+  el.classList.toggle('drag-valid',validDrop(ds,pos));
+  const r=el.getBoundingClientRect();
+  el.classList.toggle('drag-target',validDrop(ds,pos)&&x>=r.left&&x<=r.right&&y>=r.top-48&&y<=r.bottom+48);
+ });
+}
+function startDragVisual(ds,x,y){
+ const ghost=document.createElement('div');ghost.id='dragGhost';
+ ghost.setAttribute('aria-hidden','true');ghost.textContent=ds.label;
+ document.body.append(ghost);document.body.classList.add('dragging');updateDragPosition(ds,x,y);
+}
+function dropTarget(x,y,ds){
+ const els=[...document.querySelectorAll('#playerSlots [data-slot]')];
+ const matches=els.map(el=>{
+  const pos=Number(el.dataset.slot.split(':')[1]),r=el.getBoundingClientRect();
+  const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-48-y,0,y-(r.bottom+48));
+  return {pos,dist:Math.hypot(dx,dy)};
+ }).filter(o=>validDrop(ds,o.pos)).sort((a,b)=>a.dist-b.dist);
+ return matches.length&&matches[0].dist===0?matches[0].pos:null;
+}
+function runDrop(ds,pos){
+ if(!validDrop(ds,pos))return;
+ let p=game.me;
+ if(ds.source==='field'){
+  const from=Number(ds.key),benchIndex=from===1?(pos===0?0:1):(from===0?0:1);
+  retreat(benchIndex);return;
+ }
+ const c=p.hand.find(x=>x.id===Number(ds.key));if(!c)return;
+ if(c.kind==='mon'){
+  if(place(p,c.id,pos===1)){selected=null;fieldSelected=null;doMessage(pos===1?'player-front':'player-bench',`あなたが${pos===1?'前衛':pos===0?'控え①':'控え②'}にモンスターを配置。`)}
+ }else if(c.kind==='en'){
+  const target=monsterAtSlot(pos);if(!target||p.attached||!canAttach(target,c.color,p))return;
+  take(p,c.id);target.energy.push(c.color);p.attached=true;selected=null;fieldSelected=null;
+  doMessage(pos===1?'player-front':'player-bench',`あなたが${NAME[c.color]}エネルギーを1枚付与。`);
+ }else if(c.kind==='boost'){
+  take(p,c.id);p.boosted=true;p.bonus=1;selected=null;fieldSelected=null;
+  doMessage('player-front','あなたが増強カードを使用。次の攻撃+1。');
+ }else if(c.kind==='tune'){
+  selected=c.id;colorPopup(n=>{
+   if(!p.hand.some(x=>x.id===c.id)||p.tuned||!p.active?.energy.length)return;
+   take(p,c.id);p.tuned=true;p.tuneColor=n;selected=null;fieldSelected=null;
+   doMessage('player-front',`前衛の属性を一時的に${NAME[n]}へ変更。`);
+  });
+ }
+}
+function pointerDragStart(e){
+ if(e.button!==undefined&&e.button!==0)return;
+ const hand=e.target.closest('#hand [data-drag-hand]');
+ const slot=e.target.closest('#playerSlots [data-slot]');
+ if(!hand&&!slot)return;
+ const source=hand?'hand':'field',key=hand?hand.dataset.dragHand:slot.dataset.slot.split(':')[1];
+ const card=hand?game.me.hand.find(x=>x.id===Number(key)):monsterAtSlot(Number(key));
+ if(!dragAllowed(source,card))return;
+ const label=source==='hand'?`${cardName(card)}・${card.kind==='boost'?'+1':card.kind==='mon'?'無色':NAME[card.color]}`:`${Number(key)===1?'前衛':'控え'}・${colorName(base(card))}`;
+ dragState={pointerId:e.pointerId,source,key,label,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,active:false};
+}
+function pointerDragMove(e){
+ const ds=dragState;if(!ds||ds.pointerId!==e.pointerId)return;
+ ds.x=e.clientX;ds.y=e.clientY;
+ if(!ds.active&&Math.hypot(ds.x-ds.startX,ds.y-ds.startY)>11){
+  ds.active=true;startDragVisual(ds,ds.x,ds.y);
+ }
+ if(ds.active){e.preventDefault();updateDragPosition(ds,ds.x,ds.y)}
+}
+function pointerDragEnd(e){
+ const ds=dragState;if(!ds||ds.pointerId!==e.pointerId)return;
+ dragState=null;
+ if(!ds.active)return;
+ e.preventDefault();suppressCardClickUntil=performance.now()+400;
+ const pos=dropTarget(e.clientX,e.clientY,ds);endDragVisual();
+ if(pos!==null)runDrop(ds,pos);
+}
+document.addEventListener('pointerdown',pointerDragStart,{passive:true});
+document.addEventListener('pointermove',pointerDragMove,{passive:false});
+document.addEventListener('pointerup',pointerDragEnd,{passive:false});
+document.addEventListener('pointercancel',()=>{dragState=null;endDragVisual()});
+
+$('enemySlots').addEventListener('click',e=>{
+ if(notice||game.over||$('overlay').classList.contains('show'))return;
+ const el=e.target.closest('[data-slot]');if(!el)return;
+ const i=Number(el.dataset.slot.split(':')[1]);
+ const m=i===1?game.ai.active:game.ai.bench[i===0?0:1];
+ if(m)showDetails(m,'field',i===1,game.ai);
+});
+$('playerSlots').addEventListener('click',e=>{
+ if(performance.now()<suppressCardClickUntil)return;
+ if(notice||game.over||game.turn==='ai'||game.promotion||$('overlay').classList.contains('show'))return;
+ let el=e.target.closest('[data-slot]');if(!el)return;
+ selected=null;mode=null;fieldSelected=el.dataset.slot;render();
+ openFieldMenu(Number(el.dataset.slot.split(':')[1]));
+});
+$('playerSlots').addEventListener('keydown',e=>{
+ if(e.key==='Enter'||e.key===' '){let el=e.target.closest('[data-slot]');if(el){e.preventDefault();el.click()}}
+});
+$('message').addEventListener('click',acknowledge);$('restart').addEventListener('click',()=>modal('最初からやり直しますか？','現在の対戦は破棄されます。',[['やり直す',reset]]));reset();
+</script></body></html>

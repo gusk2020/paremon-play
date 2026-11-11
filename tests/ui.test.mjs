@@ -1,7 +1,7 @@
 // UI regression: boot, layouts (phone + desktop), tap menus, mouse/touch drag, victory selector.
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { launch, openGame, setup, ack, rect, mouseDrag, touchDrag, handId, clicksAllowed, MOBILE, DESKTOP } from './helpers.mjs';
+import { launch, openGame, setup, ack, rect, mouseDrag, touchDrag, handId, clicksAllowed, startMatch, chooseDraw, MOBILE, DESKTOP } from './helpers.mjs';
 
 const browser = await launch();
 after(async () => { await browser.close(); });
@@ -52,20 +52,21 @@ test('victory-target selector offers exactly 2/3/4 knockouts and updates the sco
   await ctx.close();
 });
 
-test('setup rules: the start button stays disabled until a front monster is placed; the first attack is impossible on turn 1', async () => {
+test('setup rules: the start button stays disabled until a front monster is placed; then a pile is chosen (+1 extra growth card); the first attack is impossible on turn 1', async () => {
   const { ctx, page, errors } = await openGame(browser, { seed: 8, viewport: DESKTOP });
   assert.equal(await page.isDisabled('#startBtn'), true);
   const id = await handId(page, 'mon');
   await mouseDrag(page, dragHand(id), '#playerSlots [data-slot="player:1"]');
   await ack(page);
   assert.equal(await page.evaluate(() => !!game.me.active), true);
-  await page.click('#startBtn'); await ack(page);
-  assert.equal(await page.evaluate(() => [game.turn, game.step, game.me.hand.length, game.me.deck.length].join()), 'player,0,5,24'); // placed 1, drew 1
+  await startMatch(page, 'M');
+  assert.equal(await page.evaluate(() => [game.turn, game.step, game.me.hand.length, game.me.deckM.length, game.me.deckG.length].join()), 'player,0,6,9,14', 'hand 5 - 1 placed + normal card (monster pile) + extra card (growth pile)');
   await clicksAllowed(page);
   await page.click('#playerSlots [data-slot="player:1"]');
   const b = await modalButtons(page);
   assert.deepEqual(b.map(x => x.t), ['詳細', 'ワザ①：攻撃2', 'ワザ②：攻撃3', '前衛と控えの交代', '戻る']);
   assert.ok(b.find(x => x.t.startsWith('ワザ①')).d && b.find(x => x.t.startsWith('ワザ②')).d, 'moves disabled on the very first turn');
+  assert.match(await page.textContent('#modalText'), /先攻の最初のターンは攻撃できません/, 'the reason is shown');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -78,7 +79,7 @@ test('tap: hand card opens the centre menu (使う / 詳細 / 戻る); detail sh
   assert.equal(await page.textContent('#modalTitle'), 'モンスター');
   assert.deepEqual((await modalButtons(page)).map(x => x.t), ['使う', '詳細', '戻る']);
   await page.click('#modalButtons button:has-text("詳細")');
-  assert.match(await page.textContent('#detailContent'), /ワザ① 基本攻撃：2ダメージ/);
+  assert.match(await page.textContent('#detailContent'), /ワザ① 基本攻撃：2から成長/);
   assert.equal(await page.isVisible('#detailContent img'), true);
   await page.click('#modalButtons button:has-text("閉じる")');
   assert.equal(await overlay(page), false);
@@ -130,7 +131,7 @@ test('tap: attack from the menu asks for a final confirmation, then plays the da
   await page.click('#modalButtons button:has-text("ワザ②")');
   assert.equal(await page.textContent('#modalTitle'), '攻撃の最終確認');
   await page.click('#modalButtons button:has-text("攻撃する")');
-  assert.match(await page.textContent('#messageText'), /強攻撃：3 × 弱点2 = 6ダメージ/);
+  assert.match(await page.textContent('#messageText'), /強攻撃：3 ×弱点2 = 6ダメージ/);
   assert.equal(await page.evaluate(() => game.ai.active.damage), 6, 'damage is applied as its message appears');
   await page.click('#message'); // acknowledge once: the attack ends the turn and the opponent starts
   assert.equal(await page.evaluate(() => [game.turn, game.me.active.energy.length].join()), 'ai,2', 'the attack ends the turn and keeps the energy');
@@ -149,29 +150,62 @@ test('mouse drag (desktop): monster -> front, monster -> bench, energy -> monste
   assert.equal(await page.evaluate(() => game.me.bench.length), 0, 'bench slots fill left-to-right');
   await mouseDrag(page, dragHand(ids[1]), '#playerSlots [data-slot="player:0"]'); await ack(page);
   assert.equal(await page.evaluate(() => game.me.bench.length), 1);
-  await setup(page, { me: { active: { e: [] }, bench: [{ e: [] }], hand: [{ kind: 'en', color: 0 }, { kind: 'en', color: 1 }, { kind: 'boost', color: 1 }, { kind: 'tune', color: 2 }] }, turn: 'player', step: 1 });
+  await setup(page, { me: { active: { e: [] }, bench: [{ e: [] }], hand: [{ kind: 'en', color: 0 }, { kind: 'en', color: 1 }, { kind: 'en', color: 2 }, { kind: 'boost', color: 1 }] }, turn: 'player', step: 1 });
   const h = await page.evaluate(() => game.me.hand.map(c => c.id));
-  await mouseDrag(page, dragHand(h[0]), '#playerSlots [data-slot="player:0"]'); await ack(page); // energy onto a bench monster
-  assert.deepEqual(await page.evaluate(() => [game.me.bench[0].energy, game.me.attached]), [[0], true]);
-  await mouseDrag(page, dragHand(h[1]), '#playerSlots [data-slot="player:1"]'); // second attach in the same turn: refused
-  assert.deepEqual(await page.evaluate(() => [game.me.active.energy.length, game.me.hand.length]), [0, 3]);
-  await mouseDrag(page, dragHand(h[2]), '#playerSlots [data-slot="player:1"]'); await ack(page);
+  await mouseDrag(page, dragHand(h[0]), '#playerSlots [data-slot="player:0"]'); await ack(page); // energy onto a bench monster = the EXTRA (bench-only) slot
+  assert.deepEqual(await page.evaluate(() => [game.me.bench[0].energy, game.me.attached, game.me.attachedBench]), [[0], false, true]);
+  await mouseDrag(page, dragHand(h[1]), '#playerSlots [data-slot="player:1"]'); await ack(page); // the NORMAL slot is still free for the front
+  assert.deepEqual(await page.evaluate(() => [game.me.active.energy, game.me.attached]), [[1], true]);
+  await mouseDrag(page, dragHand(h[2]), '#playerSlots [data-slot="player:1"]');   // both slots used: a third card is refused
+  await mouseDrag(page, dragHand(h[2]), '#playerSlots [data-slot="player:0"]');
+  assert.deepEqual(await page.evaluate(() => [game.me.active.energy.length, game.me.bench[0].energy.length, game.me.hand.length]), [1, 1, 2]);
+  await mouseDrag(page, dragHand(h[3]), '#playerSlots [data-slot="player:1"]'); await ack(page);
   assert.deepEqual(await page.evaluate(() => [game.me.bonus, game.me.boosted]), [1, true]);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
 
-test('mouse drag: colour-adjust card on a front monster opens the colour picker; the picked colour applies for the turn only', async () => {
+test('mouse drag: colour-adjust card on the front opens the A/B menu; A lists only the colours already attached (current one marked); the colour applies for the turn only', async () => {
   const { ctx, page } = await openGame(browser, { seed: 32, viewport: DESKTOP });
-  await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: 2 }] }, turn: 'player', step: 1 });
+  await setup(page, { me: { active: { e: [0, 1] }, bench: [], hand: [{ kind: 'tune', color: 2 }] }, turn: 'player', step: 1 });
   const id = await page.evaluate(() => game.me.hand[0].id);
   await mouseDrag(page, dragHand(id), '#playerSlots [data-slot="player:1"]');
-  assert.equal(await page.textContent('#modalTitle'), '色調整：変更後の色');
-  const bs = await modalButtons(page);
-  assert.deepEqual(bs.slice(0, 6).map(b => b.t), ['赤', '橙', '黄', '緑', '青', '紫']);
-  assert.equal(bs[0].d, true, 'cannot "change" to the current base colour');
-  await page.click('#modalButtons button:has-text("青")'); await ack(page);
-  assert.deepEqual(await page.evaluate(() => [game.me.tuneColor, game.me.tuned, base(game.me.active), game.me.active.energy]), [4, true, 0, [0]]);
+  assert.equal(await page.textContent('#modalTitle'), '色調整：方式を選ぶ');
+  const m = await modalButtons(page);
+  assert.ok(m[0].t.startsWith('A：') && !m[0].d, 'A is available: the front has energy'); assert.ok(m[1].t.startsWith('B：') && m[1].d, 'B is disabled: no energy card in hand');
+  assert.match(await page.textContent('#modalText'), /B：手札にエネルギーがありません/);
+  await page.click('#modalButtons button:has-text("A：")');
+  assert.equal(await page.textContent('#modalTitle'), '色調整A：変更先の色');
+  assert.deepEqual((await modalButtons(page)).slice(0, 2).map(b => b.t), ['赤（今の色：変化なし）', '橙'], 'only the colours already attached, the current one marked');
+  await page.click('#modalButtons button:has-text("橙")'); await ack(page);
+  assert.deepEqual(await page.evaluate(() => [game.me.tuneColor, game.me.tuned, base(game.me.active), game.me.active.energy, game.me.hand.length]), [1, true, 0, [0, 1], 0]);
+  await ctx.close();
+});
+test('colour adjustment B through the real UI: tune card + one hand energy card are spent, the colour becomes that energy\'s colour, nothing is attached', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 34, viewport: MOBILE });
+  await setup(page, { me: { active: { e: [0] }, bench: [{ e: [] }], hand: [{ kind: 'tune', color: 2 }, { kind: 'en', color: 4 }, { kind: 'en', color: 5 }] }, turn: 'player', step: 1 });
+  const id = await page.evaluate(() => game.me.hand[0].id);
+  await page.click(dragHand(id)); await page.click('#modalButtons button:has-text("使う")');
+  assert.equal(await page.textContent('#modalTitle'), '色調整：方式を選ぶ'); await page.click('#modalButtons button:has-text("B：")');
+  assert.equal(await page.textContent('#modalTitle'), '色調整B：使うエネルギー'); assert.match(await page.textContent('#modalText'), /付与されず捨て札/);
+  assert.deepEqual((await modalButtons(page)).slice(0, 2).map(b => b.t), ['青エネルギー', '紫エネルギー']);
+  await page.click('#modalButtons button:has-text("青エネルギー")'); await ack(page);
+  assert.deepEqual(await page.evaluate(() => [game.me.tuneColor, game.me.active.energy, game.me.hand.length, game.me.attached, game.me.attachedBench, game.me.tuned]), [4, [0], 1, false, false, true]);
+  await ctx.close();
+});
+test('hand menu and attach menu show WHY an action is unavailable and which slot a card would use', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 35, viewport: MOBILE });
+  await setup(page, { me: { active: { e: [0] }, bench: [{ e: [] }], hand: [{ kind: 'en', color: 3 }, { kind: 'en', color: 1 }, { kind: 'tune', color: 0 }] }, turn: 'player', step: 1 });
+  const [g, o, t] = await page.evaluate(() => game.me.hand.map(c => c.id));
+  await page.click(dragHand(g)); await page.click('#modalButtons button:has-text("使う")');
+  const labels = (await modalButtons(page)).map(b => ({ t: b.t, d: b.d }));
+  assert.match(labels[0].t, /前衛・赤（補色のため付与できません）/); assert.equal(labels[0].d, true);
+  assert.match(labels[1].t, /控え①・無色（控え追加枠）/); assert.equal(labels[1].d, false);
+  assert.match(labels[2].t, /控え②（付与するモンスターがいません）/);
+  await page.click('#modalButtons button:has-text("戻る")');
+  await page.evaluate(() => { game.me.attached = true; game.me.attachedBench = true; render(); });
+  await page.click(dragHand(o));
+  assert.equal((await modalButtons(page))[0].d, true); assert.match(await page.textContent('#modalText'), /付与枠（通常・控え追加）は使用済み/);
   await ctx.close();
 });
 
@@ -247,27 +281,15 @@ test('pictures: a monster is drawn with its colour variant (none -> _0, 赤..紫
 });
 
 // ---------------- KD-1: AI cannot draw -> the player SEES the win and restarts only by an explicit tap ----------------
-test('KD-1: AI deck empty at its turn start: failure message, then "あなたの勝利", then the player taps to start a new match', async () => {
+test('NEW empty piles (replaces the old deck-out loss): both of the AI\'s piles empty at its turn start -> no loss, the match goes on to my next draw choice', async () => {
   const { ctx, page, errors } = await openGame(browser, { seed: 91, viewport: DESKTOP });
   await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [0] }, bench: [] }, turn: 'player', step: 1 });
-  await page.evaluate(() => { game.ai.deck = []; });
-  await page.click('#turnControl button');                        // 攻撃せずターン終了
-  await page.click('#modalButtons button:has-text("ターン終了")');
-  await ack1(page, /あなたはターンを終了した/);
-  const seen = [];
-  const read = () => page.evaluate(() => ({ text: document.getElementById('messageText').textContent, shown: document.getElementById('message').classList.contains('show'), over: game.over, kos: game.me.kos + ',' + game.ai.kos, id: game.me.hand.map(c => c.id).join() }));
-  let s = await read(); seen.push(s.text);
-  assert.match(s.text, /山札から引けない/); assert.equal(s.over, false, 'not over yet: nothing may restart before the player has seen the result');
-  const handBefore = s.id;
-  await page.click('#message');
-  s = await read(); seen.push(s.text);
-  assert.match(s.text, /あなたの勝利！ 相手は山札から引けませんでした/); assert.equal(s.over, true);
-  assert.equal(await page.textContent('#messageTap'), '次の対戦に進む ▶');
-  assert.equal(await page.evaluate(() => game.turn), 'end');
-  await page.waitForTimeout(300);                                  // nothing happens on its own: the result stays until the player acts
-  s = await read(); assert.equal(s.shown, true); assert.equal(s.id, handBefore);
-  await page.click('#message');                                    // explicit operation -> next match
-  assert.deepEqual(await page.evaluate(() => [game.turn, game.over, game.me.hand.length, game.me.kos, game.ai.kos]), ['setup', false, 5, 0, 0]);
+  await page.evaluate(() => { game.ai.deckM = []; game.ai.deckG = []; });
+  await page.click('#turnControl button'); await page.click('#modalButtons button:has-text("ターン終了")');
+  const seen = []; for (let i = 0; i < 20; i++) { const t = await page.evaluate(() => document.getElementById('message').classList.contains('show') ? document.getElementById('messageText').textContent : null); if (t === null) break; seen.push(t); await page.click('#message'); }
+  assert.ok(seen.some(t => /相手のターン。引ける山札がない/.test(t)), seen.join(' / '));
+  assert.equal(await page.evaluate(() => game.over), false);
+  await page.waitForFunction(() => document.getElementById('overlay').classList.contains('show') && /山札を選んで1枚引く/.test(document.getElementById('modalTitle').textContent));
   assert.deepEqual(errors, []); await ctx.close();
 });
 async function ack1(page, re) { // click one message at a time until the one matching `re` has been acknowledged
@@ -275,20 +297,38 @@ async function ack1(page, re) { // click one message at a time until the one mat
     if (t === null) return; const hit = re.test(t); await page.click('#message'); if (hit) return; }
 }
 
-test('KD-1: the normal victory / defeat / restart paths still work through real taps (attack win, deck-out loss)', async () => {
+test('real taps: attack win (target reached), refill-impossible loss for the opponent, and a restart after every finish', async () => {
   const { ctx, page } = await openGame(browser, { seed: 92, viewport: DESKTOP });
   await setup(page, { me: { active: { e: [0] }, bench: [], kos: 1 }, ai: { active: { e: [0], d: 9 }, bench: [{ e: [] }] }, targetKos: 2, turn: 'player', step: 1 });
   await page.click('#playerSlots [data-slot="player:1"]'); await page.click('#modalButtons button:has-text("ワザ①")'); await page.click('#modalButtons button:has-text("攻撃する")');
   assert.match(await page.textContent('#messageText'), /ダメージ/); await page.click('#message');
   assert.match(await page.textContent('#messageText'), /あなたが1体撃破！ 2\/2/); await page.click('#message');
   assert.match(await page.textContent('#messageText'), /あなたの勝利！ 2体撃破/); assert.equal(await page.evaluate(() => game.over), true);
-  await page.click('#message');
-  assert.equal(await page.evaluate(() => game.turn), 'setup');
-  // player deck-out loss
-  await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [0] }, bench: [] }, turn: 'ai', step: 2 });
-  await page.evaluate(() => { game.me.deck = []; afterAi(); });
-  assert.match(await page.textContent('#messageText'), /相手の勝利！ あなたは山札から引けませんでした/);
+  assert.equal(await page.isVisible('#resultPanel'), true); assert.match(await page.textContent('#resultText'), /【2体撃破・バランス試作1】あなたの勝利（規定数撃破）/);
   await page.click('#message'); assert.equal(await page.evaluate(() => game.turn), 'setup');
+  assert.equal(await page.isVisible('#resultPanel'), true, 'the last results stay visible after the restart (for comparing modes)');
+  // opponent cannot refill: no bench, no monster in hand, monster pile empty
+  await setup(page, { me: { active: { e: [0] }, bench: [], kos: 0 }, ai: { active: { e: [0], d: 9 }, bench: [], hand: [] }, targetKos: 4, turn: 'player', step: 1 }); await page.evaluate(() => { game.ai.deckM = []; });
+  await page.click('#playerSlots [data-slot="player:1"]'); await page.click('#modalButtons button:has-text("ワザ①")'); await page.click('#modalButtons button:has-text("攻撃する")');
+  await page.click('#message'); await page.click('#message');
+  assert.equal(await page.textContent('#messageText'), '相手は場に出せるモンスターがいない（補充不能）。あなたの勝利！'); assert.equal(await page.evaluate(() => game.endReason), 'refill');
+  await page.click('#message'); assert.equal(await page.evaluate(() => game.turn), 'setup');
+  // I cannot refill after the opponent's knockout
+  await setup(page, { me: { active: { e: [0], d: 9 }, bench: [], hand: [] }, ai: { active: { e: [0] }, bench: [{ e: [] }], kos: 0 }, targetKos: 4, turn: 'ai', step: 1 }); await page.evaluate(() => { game.me.deckM = []; sequence(attackEvents(game.ai, false), () => {}); });
+  await page.click('#message'); await page.click('#message');
+  assert.equal(await page.textContent('#messageText'), 'あなたは場に出せるモンスターがいない（補充不能）。相手の勝利！');
+  await page.click('#message'); assert.equal(await page.evaluate(() => game.turn), 'setup');
+  await ctx.close();
+});
+test('refill for me through real taps: bench -> choose from the bench; no bench -> choose from hand; neither -> automatic from the monster pile', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 93, viewport: MOBILE });
+  const hit = async () => { await page.evaluate(() => { sequence(attackEvents(game.ai, false), () => { if (game.promotion) { game.afterPromotion = () => render(); render(); } }); }); await page.click('#message'); await page.click('#message'); await page.click('#message'); };   // damage, knockout, refill messages
+  await setup(page, { me: { active: { e: [0], d: 9 }, bench: [{ e: [] }], hand: [] }, ai: { active: { e: [0] }, bench: [], kos: 0 }, targetKos: 4, turn: 'ai', step: 1 }); await hit();
+  assert.equal(await page.textContent('#modalTitle'), '新しい前衛を選ぶ'); await page.click('#modalButtons button'); await ack(page);
+  assert.deepEqual(await page.evaluate(() => [!!game.me.active, game.me.bench.length, game.promotion]), [true, 0, false]);
+  await setup(page, { me: { active: { e: [0], d: 9 }, bench: [], hand: [{ kind: 'mon' }] }, ai: { active: { e: [0] }, bench: [], kos: 0 }, targetKos: 4, turn: 'ai', step: 1 }); await hit();
+  assert.equal(await page.textContent('#modalTitle'), '新しい前衛を選ぶ（手札から）'); await page.click('#modalButtons button'); await ack(page);
+  assert.deepEqual(await page.evaluate(() => [!!game.me.active, game.me.hand.length]), [true, 0]);
   await ctx.close();
 });
 
@@ -308,7 +348,7 @@ test('KD-3: 色調整 / 増強 cards are neutral auxiliary cards (no colour name
   await ctx.close();
 });
 
-test('KD-3: detail view and drag label of 色調整 / 増強 show no colour; the colour picker still offers the 6 colours', async () => {
+test('KD-3: detail view and drag label of 色調整 / 増強 show no colour; the colour-adjust menu offers methods A and B', async () => {
   const { ctx, page } = await openGame(browser, { seed: 94, viewport: DESKTOP });
   await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: 4 }, { kind: 'boost', color: 5 }] }, turn: 'player', step: 1 });
   const [tid, bid] = await page.evaluate(() => game.me.hand.map(c => c.id));
@@ -324,10 +364,10 @@ test('KD-3: detail view and drag label of 色調整 / 増強 show no colour; the
   const ghost = await page.textContent('#dragGhost'); assert.equal(ghost, '色調整'); await page.mouse.up(); await page.waitForTimeout(0);
   await ack(page).catch(() => {}); await page.evaluate(() => { closeModal(false); });
   const names = await page.evaluate(() => { document.getElementById('overlay').classList.remove('show'); return null; });
-  // the picker keeps the six real colours (those are choices, not a property of the card)
+  // the new menu offers the two methods, not a free choice among six colours
   await setup(page, { me: { active: { e: [0] }, bench: [], hand: [{ kind: 'tune', color: 4 }] }, turn: 'player', step: 1 });
   await ev2(page, () => useHand(game.me.hand[0]));
-  assert.deepEqual((await modalButtons(page)).slice(0, 6).map(b => b.t), ['赤', '橙', '黄', '緑', '青', '紫']);
+  assert.equal(await page.textContent('#modalTitle'), '色調整：方式を選ぶ'); assert.ok((await modalButtons(page))[0].t.startsWith('A：') && (await modalButtons(page))[1].t.startsWith('B：'));
   await ctx.close();
 });
 const ev2 = (page, fn) => page.evaluate(fn);
@@ -356,7 +396,7 @@ for (const [name, viewport] of HEADER_VIEWPORTS) {
 test('header: the hand is much higher on the phone than before (412x892: hand bottom 898px -> ~730px)', async () => {
   const { ctx, page } = await openGame(browser, { seed: 96, viewport: MOBILE });
   const g = await page.evaluate(() => ({ handBottom: document.getElementById('hand').getBoundingClientRect().bottom, vh: innerHeight, start: document.getElementById('startBtn').getBoundingClientRect().bottom }));
-  assert.ok(g.handBottom <= 745, `hand bottom ${g.handBottom}`); assert.ok(g.start < 100);       // measured before the change: 898px with the start button below the hand
+  assert.ok(g.handBottom <= 775, `hand bottom ${g.handBottom}`); assert.ok(g.start < 100);   // 745 before the prototype tag (13px) and the longer hint line were added       // measured before the change: 898px with the start button below the hand
   await ctx.close();
 });
 
@@ -384,7 +424,7 @@ test('header: 勝利条件 and 対戦開始 work from the header (2/3/4 selectab
   await page.selectOption('#victoryTarget', '3');
   const id = await handId(page, 'mon'); await page.click(dragHand(id)); await page.click('#modalButtons button:has-text("使う")'); await page.click('#modalButtons button:has-text("前衛")'); await ack(page);
   assert.equal(await page.isDisabled('#startBtn'), false); assert.equal(await page.isDisabled('#victoryTarget'), false);
-  await page.click('#startBtn'); await ack(page);
+  await startMatch(page, 'G');
   assert.deepEqual(await page.evaluate(() => [game.turn, game.targetKos, game.step]), ['player', 3, 0]);
   assert.equal(await page.isDisabled('#startBtn'), true); assert.equal(await page.isDisabled('#victoryTarget'), true); assert.equal(await page.inputValue('#victoryTarget'), '3');
   await page.click('#logoBtn'); assert.equal(await overlay(page), true); await page.click('#modalButtons button:has-text("閉じる")');
@@ -486,5 +526,75 @@ for (const [name, viewport, geo] of KD8_VIEWPORTS) {
       const front = document.querySelector('#playerSlots [data-slot="player:1"]'), fc = front.querySelector('.bcard'); return { slot: R(front), card: R(fc), hand: R(document.querySelector('#hand button')), field: R(document.querySelector('.field'))[1], lift: +(fc.getBoundingClientRect().top - front.getBoundingClientRect().top).toFixed(1) }; });
     assert.deepEqual(g.slot, geo.slot); assert.deepEqual(g.card, geo.slot); assert.deepEqual(g.hand, geo.hand); assert.equal(g.field, geo.field); assert.equal(g.lift, -46, 'the front card keeps its 46px lift');
     await ctx.close();
+  });
+}
+
+
+// ---------------- balance prototype 1: draw modal, labels, result panel, rules text, layout at phone widths ----------------
+test('draw modal: at the start of my turn the two piles are offered with their remaining counts and a summary of my hand/field; an empty pile is disabled; choosing draws 1 + the extra growth card', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 201, viewport: MOBILE });
+  await setup(page, { me: { active: { e: [0] }, bench: [{ e: [] }], hand: [{ kind: 'en', color: 1 }, { kind: 'tune', color: 0 }] }, ai: { active: { e: [0] }, bench: [] }, turn: 'ai', step: 1 });
+  await page.evaluate(() => { game.me.deckM.length = 3; game.me.deckG.length = 0; afterAi(); });     // growth pile empty -> only the monster pile is legal
+  await page.waitForFunction(() => document.getElementById('overlay').classList.contains('show') || document.getElementById('message').classList.contains('show'));
+  // only one legal pile: it is taken automatically (no pointless tap) and the message says which
+  const t = await page.evaluate(() => document.getElementById('messageText').textContent); assert.match(t, /モンスター山札から1枚引いた/);
+  await ack(page);
+  await page.evaluate(() => newGame());   // fresh piles
+  await setup(page, { me: { active: { e: [0] }, bench: [{ e: [] }], hand: [{ kind: 'en', color: 1 }, { kind: 'tune', color: 0 }] }, ai: { active: { e: [0] }, bench: [] }, turn: 'ai', step: 1 });
+  await page.evaluate(() => { afterAi(); });
+  await page.waitForFunction(() => /山札を選んで1枚引く/.test(document.getElementById('modalTitle').textContent));
+  const b = await modalButtons(page); assert.deepEqual(b.map(x => x.t), ['モンスター山札（残り10）', '育成山札（残り15）']); assert.ok(b.every(x => !x.d));
+  const txt = await page.textContent('#modalText'); assert.match(txt, /手札：モンスター0／エネルギー1（橙）／色調整1／増強0。場：前衛あり・控え1体。/); assert.match(txt, /追加で育成山札からも1枚/);
+  const hs = await page.$$eval('#modalButtons button', bs => bs.map(x => x.getBoundingClientRect().height)); assert.ok(hs.every(h => h >= 44), hs.join());
+  assert.equal(await page.evaluate(() => document.getElementById('modal').scrollWidth <= document.getElementById('modal').clientWidth), true, 'the modal does not overflow sideways');
+  await page.click('#modalButtons button:has-text("育成山札")'); const seen = [];
+  for (let i = 0; i < 5; i++) { const m = await page.evaluate(() => document.getElementById('message').classList.contains('show') ? document.getElementById('messageText').textContent : null); if (!m) break; seen.push(m); await page.click('#message'); }
+  assert.deepEqual(seen.map(x => x.replace(/ターン \d+回目/, 'ターン n回目')), ['あなたのターン n回目。育成山札から1枚引いた。'.replace('n回目', 'n回目'), '追加ドロー：育成山札から1枚引いた。'].map(x => x.replace(/ターン \d+回目/, 'ターン n回目')));
+  assert.deepEqual(await page.evaluate(() => [game.me.deckG.length, game.me.hand.length]), [13, 4], '15 - normal - extra; hand 2 + 2');
+  assert.deepEqual(errors, []); await ctx.close();
+});
+
+test('draw modal: when both piles are empty nothing is drawn and the turn simply starts (no loss)', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 202, viewport: MOBILE });
+  await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [0] }, bench: [] }, turn: 'ai', step: 1 });
+  await page.evaluate(() => { game.me.deckM = []; game.me.deckG = []; afterAi(); });
+  assert.match(await page.textContent('#messageText'), /引ける山札がありません/); assert.equal(await page.evaluate(() => game.over), false);
+  await ctx.close();
+});
+
+test('prototype label and rules: 「バランス試作1／仮設定」 is visible on screen and in the rules dialog (confirmed directions vs provisional numbers vs rule changes)', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 203, viewport: MOBILE });
+  assert.match(await page.textContent('.proto-tag'), /バランス試作1／仮設定（確定仕様ではありません）/); assert.equal(await page.isVisible('.proto-tag'), true);
+  await page.click('#logoBtn'); const txt = await page.textContent('#detailContent');
+  for (const must of ['バランス試作1（仮設定）', '確定した方向性', '仮ルール（数値・細則）', 'モンスター山札12枚と育成山札18枚', '追加で1枚引き', '有効エネルギー3と5で+1、最大4', '有効エネルギー4と6で+1、最大5', '同色', '控え専用の追加枠', '色調整は1ターン1回', 'A＝', 'B＝', '補充不能', '旧：早期決着', '旧：引けないと敗北', '40ターン', 'Git履歴']) assert.ok(txt.includes(must), `rules text lacks: ${must}`);
+  await ctx.close();
+});
+
+test('result panel: shown after a finished match with the mode and indicators, kept after the restart, newest first, with a copy button', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 204, viewport: MOBILE });
+  assert.equal(await page.isVisible('#resultPanel'), false, 'nothing to show before the first finished match');
+  for (const target of [2, 3]) {
+    await setup(page, { me: { active: { e: [0, 0] }, bench: [], kos: target - 1 }, ai: { active: { e: [0], d: 9 }, bench: [{ e: [] }] }, targetKos: target, turn: 'player', step: 1 });
+    await page.evaluate(() => { sequence(attackEvents(game.me, false), () => {}); }); await page.click('#message'); await page.click('#message'); await page.click('#message');   // damage, knockout, victory (the tap on the victory message restarts)
+  }
+  assert.equal(await page.isVisible('#resultPanel'), true);
+  const txt = await page.textContent('#resultText'); assert.ok(txt.indexOf('【3体撃破') < txt.indexOf('【2体撃破'), 'newest first'); assert.match(txt, /最大有効E\d+／平均付与/);
+  await page.evaluate(() => { navigator.clipboard.writeText = async t => { window.__copied = t; }; });
+  await page.click('#copyResult'); assert.equal((await page.evaluate(() => window.__copied)).includes('【2体撃破・バランス試作1】'), true); assert.equal(await page.textContent('#copyNote'), 'コピーしました');
+  await ctx.close();
+});
+
+for (const [name, viewport] of HEADER_VIEWPORTS) {
+  test(`prototype layout (${name}): no sideways overflow; header still one row; deck counts, tag and result panel fit; draw modal fits`, async () => {
+    const { ctx, page, errors } = await openGame(browser, { seed: 205, viewport });
+    await setup(page, { me: { active: { e: [0, 1] }, bench: [{ e: [] }], hand: [{ kind: 'en', color: 1 }, { kind: 'tune', color: 0 }, { kind: 'boost', color: 1 }, { kind: 'mon' }, { kind: 'en', color: 4 }] }, turn: 'ai', step: 1 });
+    await page.evaluate(() => { RESULTS.unshift(resultText()); render(); });
+    const g = async () => page.evaluate(() => { const R = s => { const r = document.querySelector(s).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height }; };
+      return { over: document.documentElement.scrollWidth - innerWidth, top: R('#topbar'), tag: R('.proto-tag'), vw: innerWidth, deck: [...document.querySelectorAll('.team-bar .muted')].map(e => ({ h: e.getBoundingClientRect().height, r: e.getBoundingClientRect().right })), bars: [...document.querySelectorAll('.team-bar')].map(e => e.getBoundingClientRect().height), result: R('#resultPanel') }; });
+    const a = await g(); assert.ok(a.over <= 0, `overflow ${a.over}`); assert.ok(a.top.h <= 84, `header ${a.top.h}`); assert.ok(a.tag.h > 0 && a.tag.h < 22 && a.tag.r <= a.vw); assert.ok(a.deck.every(d => d.h < 24 && d.r <= a.vw), JSON.stringify(a.deck)); assert.ok(a.bars.every(h => h <= 40), a.bars.join()); assert.ok(a.result.r <= a.vw);
+    await page.evaluate(() => { afterAi(); });
+    await page.waitForFunction(() => /山札を選んで1枚引く/.test(document.getElementById('modalTitle').textContent));
+    const m = await page.evaluate(() => { const r = document.getElementById('modal').getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, vw: innerWidth, vh: innerHeight }; });
+    assert.ok(m.l >= 0 && m.r <= m.vw && m.t >= 0 && m.b <= m.vh, JSON.stringify(m)); assert.deepEqual(errors, []); await ctx.close();
   });
 }

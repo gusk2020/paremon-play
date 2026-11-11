@@ -41,12 +41,12 @@ export async function setup(page, cfg) {
       if ('bench' in s) p.bench = s.bench.map(build);
       if ('hand' in s) p.hand = s.hand.map(h => fresh(h.kind, h.color));
       // every flag is reset first, so no test can inherit state from the previous one
-      Object.assign(p, { kos: 0, tuneColor: null, bonus: 0, attached: false, retreated: false, tuned: false, boosted: false });
-      for (const k of ['kos', 'tuneColor', 'bonus', 'attached', 'retreated', 'tuned', 'boosted']) if (k in s) p[k] = s[k];
+      Object.assign(p, { kos: 0, tuneColor: null, bonus: 0, attached: false, attachedBench: false, retreated: false, tuned: false, boosted: false });
+      for (const k of ['kos', 'tuneColor', 'bonus', 'attached', 'attachedBench', 'retreated', 'tuned', 'boosted']) if (k in s) p[k] = s[k];
     }
     game.turn = cfg.turn || 'player'; game.step = cfg.step ?? 1;
     if ('targetKos' in cfg) game.targetKos = cfg.targetKos;
-    game.over = false; game.promotion = false;
+    game.over = false; game.promotion = false; game.drawPending = false;
     selected = null; fieldSelected = null; pendingAttack = null; mode = null; queue = []; notice = null; onEmpty = null;
     document.getElementById('overlay').classList.remove('show');
     render();
@@ -58,7 +58,7 @@ export async function attack(page, who, strong) {
   return page.evaluate(([who, strong]) => {
     const p = who === 'me' ? game.me : game.ai, t = who === 'me' ? game.ai : game.me;
     const before = t.active ? t.active.damage : null;
-    const ev = resolveAttackSafe(p, strong);
+    const ev = attackEvents(p, strong);
     ev.forEach(e => e.fn && e.fn());
     return { texts: ev.map(e => e.text), before, after: t.active ? t.active.damage : null,
       kos: p.kos, over: game.over, promotion: game.promotion, targetActive: !!t.active, bonus: p.bonus };
@@ -116,3 +116,12 @@ export const handId = (page, kind, color) => page.evaluate(([k, c]) => {
 
 // After a drag the game ignores clicks for 400 ms on purpose (suppressCardClickUntil). Wait for that condition itself.
 export const clicksAllowed = page => page.waitForFunction(() => performance.now() >= suppressCardClickUntil);
+
+// New rules: after 対戦開始 (and at every own turn start) a modal asks which pile gives the normal card.
+export async function chooseDraw(page, pile = 'M') {
+  await page.waitForFunction(() => document.getElementById('overlay').classList.contains('show') && /山札を選んで1枚引く/.test(document.getElementById('modalTitle').textContent));
+  await page.click(`#modalButtons button:has-text("${pile === 'M' ? 'モンスター山札' : '育成山札'}")`);
+  await ack(page);
+}
+// press 対戦開始, read the opening message, choose the pile, read the draw messages
+export async function startMatch(page, pile = 'M') { await page.click('#startBtn'); await ack(page); await chooseDraw(page, pile); }

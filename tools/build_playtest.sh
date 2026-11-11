@@ -6,6 +6,7 @@ SHA="${1:?full commit sha}"; OUT="${2:?output dir}"; PR="${3:-https://github.com
 SHORT="${SHA:0:7}"; ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAGE="$(mktemp -d)"; trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$OUT" "$STAGE/paremon_monsters2"
+OUT="$(cd "$OUT" && pwd)"   # absolute: the zip is created from inside the staging folder, so a relative path (CI passes "dist") would break
 cp "$ROOT/paremon_crossplatform_v17.html" "$STAGE/index.html"
 cp "$ROOT/paremon_logo_center_crop2.png" "$STAGE/"
 cp "$ROOT"/paremon_monsters2/*.png "$STAGE/paremon_monsters2/"

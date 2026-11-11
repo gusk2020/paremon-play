@@ -31,6 +31,16 @@ test('ZIP: named paremon-playtest-<short sha>.zip, passes the integrity test, sm
   const size = fs.statSync(zip).size; assert.ok(size > 1e6 && size < 12e6, `size ${size}`);
 });
 
+test('ZIP build works with a RELATIVE output folder, exactly as CI calls it (bash tools/build_playtest.sh <sha> dist <pr>)', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'paremon-rel-'));
+  try {
+    const r = sh('bash', [path.join(ROOT, 'tools/build_playtest.sh'), sha, 'dist', 'https://github.com/gusk2020/paremon-play/pull/1'], { cwd });
+    const f = path.join(cwd, 'dist', `paremon-playtest-${sha.slice(0, 7)}.zip`);
+    assert.ok(fs.existsSync(f), `missing ${f}`); assert.ok(r.trim().endsWith(path.basename(f)));
+    sh('unzip', ['-tq', f]);
+  } finally { fs.rmSync(cwd, { recursive: true, force: true }); }
+});
+
 test('ZIP: index.html, logo and paremon_monsters2/ sit at the top level (no parent folder); exactly 38 files', () => {
   const names = sh('unzip', ['-Z1', zip]).trim().split('\n').filter(n => !n.endsWith('/'));
   const want = ['index.html', 'PLAYTEST.txt', 'paremon_logo_center_crop2.png', ...SPECIES.flatMap(s => [0, 1, 2, 3, 4, 5, 6].map(i => `paremon_monsters2/${s}_${i}.png`))].sort();

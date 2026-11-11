@@ -21,7 +21,9 @@ Pixel 7a 実機での動作は **未確認** です（下記テストはPCのChr
 | [.claude/skills/game-development/SKILL.md](.claude/skills/game-development/SKILL.md) | ゲーム開発スキル v4.0（正本のコピー、無改変） |
 
 ## 試遊版（非公開）
-PRのCIが、テスト成功後に試遊用の成果物 `paremon-playtest-<短いSHA>`（`index.html`＋ロゴ＋画像35枚＋`PLAYTEST.txt`）を作ります。Privateリポジトリ内、14日保存。PRの「Checks」→ CI → **Artifacts** から取得し、展開して `index.html` を Chrome で開きます（詳細は [docs/STATUS.md](docs/STATUS.md)）。公開や外部ホスティングはしていません。
+PRのCIが、テスト成功後に試遊用の成果物を2種類作ります。
+- **`paremon-playtest-standalone-<短いSHA>`（Android・Pixel 7a 用、推奨）**：ゲームと画像を内蔵したHTML 1個。ダウンロード→展開→そのHTMLをChromeで開くだけ。Androidの `content://` では複数ファイル版の画像が表示されないため（実機で確認済みの不具合）。
+- `paremon-playtest-<短いSHA>`（PC向けの互換用）：`index.html`＋ロゴ＋画像35枚＋`PLAYTEST.txt`。Privateリポジトリ内、14日保存。PRの「Checks」→ CI → **Artifacts** から取得し、展開して `index.html` を Chrome で開きます（詳細は [docs/STATUS.md](docs/STATUS.md)）。公開や外部ホスティングはしていません。
 
 ## テスト
 ```

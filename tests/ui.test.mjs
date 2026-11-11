@@ -16,7 +16,7 @@ for (const [name, viewport] of [['phone 412x892', MOBILE], ['small phone 360x640
     await page.waitForTimeout(300);
     const s = await page.evaluate(() => ({
       enemyCards: document.querySelectorAll('#enemySlots .bcard').length, playerEmpty: document.querySelectorAll('#playerSlots .empty-slot').length,
-      hand: document.querySelectorAll('#hand button').length, imgs: [...document.images].map(i => ({ src: i.getAttribute('src'), ok: i.complete && i.naturalWidth > 0 })),
+      hand: document.querySelectorAll('#hand button').length, imgs: [...document.images].map(i => ({ src: (i.dataset.art || i.getAttribute('src')), ok: i.complete && i.naturalWidth > 0 })),
       overflowX: document.documentElement.scrollWidth - window.innerWidth, logo: !!document.querySelector('.logo-banner img'),
       title: document.title, opScore: document.getElementById('opScore').textContent }));
     assert.deepEqual(errors, []);
@@ -232,8 +232,9 @@ test('restart button asks for confirmation and then deals a fresh game', async (
 
 test('pictures: a monster is drawn with its colour variant (none -> _0, 赤..紫 -> _1.._6) and follows a temporary colour adjustment', async () => {
   const { ctx, page } = await openGame(browser, { seed: 71 });
-  const src = () => page.$eval('#playerSlots [data-slot="player:1"] img', i => i.getAttribute('src'));
-  const ok = () => page.$eval('#playerSlots [data-slot="player:1"] img', i => i.complete && i.naturalWidth > 0);
+  const src = () => page.$eval('#playerSlots [data-slot="player:1"] img', i => (i.dataset.art || i.getAttribute('src')));
+  const ok = async () => { await page.waitForFunction(() => { const i = document.querySelector('#playerSlots [data-slot="player:1"] img'); return i && i.complete; });   // wait for the load to FINISH (a broken image finishes with width 0 and still fails below)
+    return page.$eval('#playerSlots [data-slot="player:1"] img', i => i.naturalWidth > 0); };
   await setup(page, { me: { active: { e: [] }, bench: [] }, turn: 'player', step: 1 });
   assert.equal(await src(), 'paremon_monsters2/knight_0.png');
   for (let c = 0; c < 6; c++) {
@@ -336,7 +337,7 @@ for (const [name, viewport, maxLogoW] of [['phone', MOBILE, 360], ['small phone'
   test(`logo (${name}): shown at the top, decoded, scaled to the page width, aspect kept, game board not pushed off`, async () => {
     const { ctx, page, errors } = await openGame(browser, { seed: 95, viewport });
     const g = await page.evaluate(() => { const i = document.querySelector('.logo-banner img'), r = i.getBoundingClientRect(), b = document.querySelector('.battle').getBoundingClientRect();
-      return { ok: i.complete && i.naturalWidth > 0, nat: [i.naturalWidth, i.naturalHeight], w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right, battleTop: b.top, vw: innerWidth, overflow: document.documentElement.scrollWidth - innerWidth, alt: i.alt, src: i.getAttribute('src') }; });
+      return { ok: i.complete && i.naturalWidth > 0, nat: [i.naturalWidth, i.naturalHeight], w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right, battleTop: b.top, vw: innerWidth, overflow: document.documentElement.scrollWidth - innerWidth, alt: i.alt, src: (i.dataset.art || i.getAttribute('src')) }; });
     assert.equal(g.ok, true); assert.equal(g.src, 'paremon_logo_center_crop2.png'); assert.equal(g.alt, 'パレットモンスター（パレモン）のロゴ');
     assert.ok(g.w <= maxLogoW + 0.5 && g.w > 250, `logo width ${g.w}`); assert.ok(Math.abs(g.w / g.h - g.nat[0] / g.nat[1]) < 0.02, 'aspect ratio preserved');
     assert.ok(g.top < 30 && g.left >= 0 && g.right <= g.vw, 'at the top, inside the viewport'); assert.ok(g.overflow <= 0);
@@ -370,7 +371,7 @@ test('pictures: all 5 species x 7 states (35) render in the game with no 404 and
   for (const sp of ['centipede', 'dragon', 'golem', 'knight', 'skeleton']) for (let c = -1; c < 6; c++) {
     await setup(page, { me: { active: { e: c < 0 ? [] : [c], sp }, bench: [] }, turn: 'player', step: 1 });
     await page.waitForFunction(() => { const i = document.querySelector('#playerSlots [data-slot="player:1"] img'); return i && i.complete; });
-    const r = await page.$eval('#playerSlots [data-slot="player:1"] img', i => ({ src: i.getAttribute('src'), ok: i.naturalWidth > 0, r: i.getBoundingClientRect().width }));
+    const r = await page.$eval('#playerSlots [data-slot="player:1"] img', i => ({ src: (i.dataset.art || i.getAttribute('src')), ok: i.naturalWidth > 0, r: i.getBoundingClientRect().width }));
     assert.equal(r.src, `paremon_monsters2/${sp}_${c + 1}.png`); assert.ok(r.ok, r.src); assert.ok(r.r > 30, `${r.src} drawn ${r.r}px wide`); seen.add(r.src);
   }
   assert.equal(seen.size, 35); assert.deepEqual(failed, []); assert.deepEqual(errors, []);

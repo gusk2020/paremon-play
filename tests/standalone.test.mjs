@@ -46,7 +46,7 @@ test('standalone: the verifier DETECTS broken builds (missing picture, corrupt p
     'missing picture': h => h.replace(`"${key}":"${b64}",`, ''),
     'corrupt picture': h => h.replace(`"${key}":"${b64}"`, `"${key}":"${Buffer.from('not a png at all').toString('base64')}"`),
     'wrong picture': h => h.replace(`"${key}":"${b64}"`, `"${key}":"${JSON.parse(table)[KEYS[4]]}"`),
-    'relative <img src>': h => h.replace('<div class="logo-banner"><img ', '<div class="logo-banner"><img src="paremon_logo_center_crop2.png" '),
+    'relative <img src>': h => h.replace('<header id="topbar">', '<header id="topbar"><img src="paremon_logo_center_crop2.png">'),
     'external script': h => h.replace('</head>', '<script src="https://cdn.example/x.js"></script></head>'),
     'no logo': h => h.replace(/data-art="paremon_logo_center_crop2\.png" src="data:image\/png;base64,[A-Za-z0-9+/=]+"/, 'src="x"'),
     'artSrc still path-based': h => h.replace('const artSrc=(m,c)=>EMBED[artKey(m,c)]', 'const artSrc=(m,c)=>artKey(m,c)'),

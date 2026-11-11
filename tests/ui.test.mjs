@@ -54,12 +54,12 @@ test('victory-target selector offers exactly 2/3/4 knockouts and updates the sco
 
 test('setup rules: the start button stays disabled until a front monster is placed; the first attack is impossible on turn 1', async () => {
   const { ctx, page, errors } = await openGame(browser, { seed: 8, viewport: DESKTOP });
-  assert.equal(await page.isDisabled('#turnControl button'), true);
+  assert.equal(await page.isDisabled('#startBtn'), true);
   const id = await handId(page, 'mon');
   await mouseDrag(page, dragHand(id), '#playerSlots [data-slot="player:1"]');
   await ack(page);
   assert.equal(await page.evaluate(() => !!game.me.active), true);
-  await page.click('#turnControl button.primary'); await ack(page);
+  await page.click('#startBtn'); await ack(page);
   assert.equal(await page.evaluate(() => [game.turn, game.step, game.me.hand.length, game.me.deck.length].join()), 'player,0,5,24'); // placed 1, drew 1
   await clicksAllowed(page);
   await page.click('#playerSlots [data-slot="player:1"]');
@@ -332,27 +332,97 @@ test('KD-3: detail view and drag label of 色調整 / 増強 show no colour; the
 });
 const ev2 = (page, fn) => page.evaluate(fn);
 
-// ---------------- logo placement / layout ----------------
-for (const [name, viewport, maxLogoW] of [['phone', MOBILE, 360], ['small phone', { width: 360, height: 640 }, 360], ['desktop', DESKTOP, 420]]) {
-  test(`logo (${name}): shown at the top, decoded, scaled to the page width, aspect kept, game board not pushed off`, async () => {
+// ---------------- header: logo | 勝利条件 | 対戦開始 in ONE row; logo opens the rules ----------------
+const HEADER_VIEWPORTS = [['360', { width: 360, height: 740 }], ['393 (Pixel 7a-like)', { width: 393, height: 851 }], ['412', { width: 412, height: 892 }], ['desktop 1280', DESKTOP]];
+for (const [name, viewport] of HEADER_VIEWPORTS) {
+  test(`header (${name}): logo (left, ~1/3 of the old height) | 勝利条件 | 対戦開始 share ONE row; touch targets >= 44px; nothing overflows; picture decoded`, async () => {
     const { ctx, page, errors } = await openGame(browser, { seed: 95, viewport });
-    const g = await page.evaluate(() => { const i = document.querySelector('.logo-banner img'), r = i.getBoundingClientRect(), b = document.querySelector('.battle').getBoundingClientRect();
-      return { ok: i.complete && i.naturalWidth > 0, nat: [i.naturalWidth, i.naturalHeight], w: r.width, h: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right, battleTop: b.top, vw: innerWidth, overflow: document.documentElement.scrollWidth - innerWidth, alt: i.alt, src: (i.dataset.art || i.getAttribute('src')) }; });
-    assert.equal(g.ok, true); assert.equal(g.src, 'paremon_logo_center_crop2.png'); assert.equal(g.alt, 'パレットモンスター（パレモン）のロゴ');
-    assert.ok(g.w <= maxLogoW + 0.5 && g.w > 250, `logo width ${g.w}`); assert.ok(Math.abs(g.w / g.h - g.nat[0] / g.nat[1]) < 0.02, 'aspect ratio preserved');
-    assert.ok(g.top < 30 && g.left >= 0 && g.right <= g.vw, 'at the top, inside the viewport'); assert.ok(g.overflow <= 0);
-    assert.ok(g.battleTop >= g.bottom, 'battle board starts below the logo');
+    const g = await page.evaluate(() => { const R = s => { const r = document.querySelector(s).getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; };
+      const i = document.querySelector('#logoBtn img');
+      return { top: R('#topbar'), logo: R('#logoBtn'), vic: R('.top-victory'), sel: R('#victoryTarget'), start: R('#startBtn'), battle: R('.battle'), ok: i.complete && i.naturalWidth > 0, nat: [i.naturalWidth, i.naturalHeight], img: R('#logoBtn img'),
+        alt: i.alt, src: (i.dataset.art || i.getAttribute('src')), overflow: document.documentElement.scrollWidth - innerWidth, vw: innerWidth, label: document.getElementById('logoBtn').getAttribute('aria-label') }; });
+    assert.equal(g.ok, true); assert.equal(g.src, 'paremon_logo_center_crop2.png'); assert.equal(g.alt, 'パレットモンスター（パレモン）のロゴ'); assert.equal(g.label, 'ルールと仮設定を開く');
+    assert.ok(g.logo.h >= 76 && g.logo.h <= 84, `logo height ${g.logo.h} (the old one was 240px at phone width; about 1/3)`); assert.ok(Math.abs(g.img.w / g.img.h - g.nat[0] / g.nat[1]) < 0.02, 'aspect ratio preserved');
+    assert.ok(g.logo.l <= g.top.l + 1, 'logo at the left edge of the header');
+    // one row: all three overlap vertically inside the header, in the order logo < victory < start, no wrapping
+    for (const k of ['logo', 'vic', 'start']) assert.ok(g[k].t >= g.top.t - 0.5 && g[k].b <= g.top.b + 0.5, `${k} inside the header row`);
+    assert.ok(g.logo.r <= g.vic.l + 0.5 && g.vic.r <= g.start.l + 0.5, 'order: logo, 勝利条件, 対戦開始, left to right');
+    assert.ok(g.top.h <= 84, `header height ${g.top.h}`); assert.ok(g.sel.h >= 44 && g.start.h >= 44, 'controls stay at least 44px tall'); assert.ok(g.sel.w >= 90 && g.start.w >= 80);
+    assert.ok(g.start.r <= g.vw && g.overflow <= 0); assert.ok(g.battle.t >= g.top.b, 'board starts below the header');
     assert.deepEqual(errors, []); await ctx.close();
   });
 }
 
-test('phone layout: the cleaned logo is shorter than the original (298px -> 240px at 360px width), so the board and hand sit 58px higher', async () => {
+test('header: the hand is much higher on the phone than before (412x892: hand bottom 898px -> ~730px)', async () => {
   const { ctx, page } = await openGame(browser, { seed: 96, viewport: MOBILE });
-  const g = await page.evaluate(() => ({ logoH: document.querySelector('.logo-banner img').getBoundingClientRect().height, handBottom: document.getElementById('hand').getBoundingClientRect().bottom }));
-  assert.ok(g.logoH <= 245, `logo height ${g.logoH}`);            // measured with the original logo: 298px, hand bottom 956px
-  assert.ok(g.handBottom <= 905, `hand bottom ${g.handBottom}`);  // measured now: 240px / 898px
+  const g = await page.evaluate(() => ({ handBottom: document.getElementById('hand').getBoundingClientRect().bottom, vh: innerHeight, start: document.getElementById('startBtn').getBoundingClientRect().bottom }));
+  assert.ok(g.handBottom <= 745, `hand bottom ${g.handBottom}`); assert.ok(g.start < 100);       // measured before the change: 898px with the start button below the hand
   await ctx.close();
 });
+
+test('header: tapping the logo opens 「ルールと仮設定」 in setup, during the player turn, while a message shows, and on the opponent turn; closing changes nothing', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 97, viewport: MOBILE });
+  const snap = () => page.evaluate(() => JSON.stringify([game.turn, game.step, game.me.hand.map(c => c.id), game.ai.hand.length, game.me.kos, game.ai.kos, !!game.me.active]));
+  const check = async (label) => { const before = await snap(); await page.click('#logoBtn');
+    assert.equal(await overlay(page), true, label); assert.equal(await page.textContent('#modalTitle'), 'ルールと仮設定', label);
+    const txt = await page.textContent('#detailContent'); assert.ok(txt.includes('確定事項') && txt.includes('仮ルール') && txt.includes('補色'), label + ': rules text');
+    assert.deepEqual((await modalButtons(page)).map(b => b.t), ['閉じる']); await page.click('#modalButtons button:has-text("閉じる")');
+    assert.equal(await overlay(page), false, label); assert.equal(await snap(), before, label + ': nothing changed'); };
+  await check('setup');
+  await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [1] }, bench: [] }, turn: 'player', step: 1 }); await check('player turn');
+  await page.evaluate(() => doMessage('center', 'テスト通知')); await check('message showing'); await ack(page);
+  await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [1] }, bench: [] }, turn: 'ai', step: 1 }); await check('opponent turn');
+  // the bottom 「ルールと仮設定」 panel still works
+  await page.click('.panel.rules summary'); assert.ok((await page.textContent('.panel.rules details')).includes('確定事項'));
+  assert.deepEqual(errors, []); await ctx.close();
+});
+
+test('header: 勝利条件 and 対戦開始 work from the header (2/3/4 selectable in setup; start needs a front monster; both locked once the match runs)', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 98, viewport: { width: 393, height: 851 } });
+  assert.equal(await page.isDisabled('#startBtn'), true, 'no front monster yet');
+  for (const n of ['3', '4', '2']) { await page.selectOption('#victoryTarget', n); assert.deepEqual(await page.evaluate(() => [game.targetKos, document.getElementById('opScore').textContent]), [Number(n), `撃破 0/${n}`]); }
+  await page.selectOption('#victoryTarget', '3');
+  const id = await handId(page, 'mon'); await page.click(dragHand(id)); await page.click('#modalButtons button:has-text("使う")'); await page.click('#modalButtons button:has-text("前衛")'); await ack(page);
+  assert.equal(await page.isDisabled('#startBtn'), false); assert.equal(await page.isDisabled('#victoryTarget'), false);
+  await page.click('#startBtn'); await ack(page);
+  assert.deepEqual(await page.evaluate(() => [game.turn, game.targetKos, game.step]), ['player', 3, 0]);
+  assert.equal(await page.isDisabled('#startBtn'), true); assert.equal(await page.isDisabled('#victoryTarget'), true); assert.equal(await page.inputValue('#victoryTarget'), '3');
+  await page.click('#logoBtn'); assert.equal(await overlay(page), true); await page.click('#modalButtons button:has-text("閉じる")');
+  assert.deepEqual(errors, []); await ctx.close();
+});
+
+test('header: the start button cannot start a match while a message is showing or a menu is open', async () => {
+  const { ctx, page } = await openGame(browser, { seed: 99, viewport: MOBILE });
+  await setup(page, { me: { active: { e: [] }, bench: [] }, turn: 'setup', step: 0 });
+  await page.evaluate(() => doMessage('center', 'テスト')); assert.equal(await page.isDisabled('#startBtn'), true); assert.equal(await page.isDisabled('#victoryTarget'), true);
+  await ack(page); assert.equal(await page.isDisabled('#startBtn'), false);
+  await ctx.close();
+});
+
+// ---------------- field cards: no 前衛/控え wording, bigger picture; central lane captions ----------------
+for (const [name, viewport] of HEADER_VIEWPORTS) {
+  test(`field cards (${name}): no 「前衛」「控え」 text inside monster cards, the picture is bigger than before, name/HP/energy stay readable`, async () => {
+    const { ctx, page } = await openGame(browser, { seed: 3, viewport });
+    await setup(page, { me: { active: { e: [0, 1], sp: 'centipede' }, bench: [{ e: [], sp: 'golem' }, { e: [2], sp: 'dragon' }] }, ai: { active: { e: [1], sp: 'knight' }, bench: [{ e: [], sp: 'skeleton' }] }, turn: 'player', step: 1 });
+    await page.waitForFunction(() => [...document.images].every(i => i.complete));
+    const r = await page.evaluate(() => [...document.querySelectorAll('#enemySlots .bcard,#playerSlots .bcard')].map(c => ({ text: c.textContent, aria: c.getAttribute('aria-label'), art: c.querySelector('.monster-art-panel').getBoundingClientRect().height, name: c.querySelector('.monster-name').getBoundingClientRect().height, hp: c.querySelector('.hp').textContent, en: c.querySelector('.energy').getBoundingClientRect().height })));
+    assert.equal(r.length, 5);
+    for (const c of r) { assert.ok(!/前衛|控え/.test(c.text), `card text still has the lane wording: ${c.text}`); assert.ok(/前衛|控え/.test(c.aria), 'screen-reader label keeps the lane');
+      assert.ok(c.art >= (viewport.width >= 800 ? 78 : 80), `picture panel ${c.art}px (it was 69-71px on phones before)`); assert.ok(c.name >= 12 && c.en >= 11, 'text lines readable'); assert.match(c.hp, /HP \d+\/10/); }
+    await ctx.close();
+  });
+  test(`lane captions (${name}): one shared row 「控え　前衛　控え」 in the central band, each centred exactly over its column`, async () => {
+    const { ctx, page } = await openGame(browser, { seed: 3, viewport });
+    const g = await page.evaluate(() => { const c = e => { const r = e.getBoundingClientRect(); return r.left + r.width / 2; }; const band = document.querySelector('.center-line').getBoundingClientRect();
+      const ef = document.querySelector('.enemy-field').getBoundingClientRect(), pf = document.querySelector('.player-field').getBoundingClientRect();
+      return { labels: [...document.querySelectorAll('.center-line .lanes span')].map(e => e.textContent), lc: [...document.querySelectorAll('.center-line .lanes span')].map(c), sc: [...document.querySelectorAll('#playerSlots .slot')].map(c), ec: [...document.querySelectorAll('#enemySlots .slot')].map(c),
+        band: [band.top, band.bottom], ef: ef.bottom, pf: pf.top, hidden: document.querySelector('.center-line').getAttribute('aria-hidden') }; });
+    assert.deepEqual(g.labels, ['控え', '前衛', '控え']);
+    for (let k = 0; k < 3; k++) { assert.ok(Math.abs(g.lc[k] - g.sc[k]) <= 1, `caption ${k} centre ${g.lc[k]} vs player column ${g.sc[k]}`); assert.ok(Math.abs(g.lc[k] - g.ec[k]) <= 1, 'and the opponent column'); }
+    assert.ok(g.band[0] >= g.ef - 0.5 && g.band[1] <= g.pf + 0.5, 'the captions sit between the two fields'); assert.equal(g.hidden, 'true');
+    await ctx.close();
+  });
+}
 
 test('touch targets: hand cards and board slots are at least 44px tall on the phone viewport (unchanged by the card redesign)', async () => {
   const { ctx, page } = await openGame(browser, { seed: 97, viewport: MOBILE });

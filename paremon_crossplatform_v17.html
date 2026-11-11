@@ -246,14 +246,28 @@ body.dragging #hand{overflow-x:visible}
 /* Wider fonts (the info line "HP10／無色" on a 62-69px hand card) wrapped to two lines and squeezed the picture to ~30px.
    On monster cards that line stays on one line (ellipsis only if a font is extremely wide). Auxiliary cards (no picture) keep wrapping. */
 .hand-card>.monster-art-panel~.small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* UI adjustment: one-row header, bigger pictures in field cards, lane captions in the central band */
+#topbar{display:flex;align-items:center;gap:8px;margin:2px 0 6px}
+#topbar .logo-banner{flex:0 0 auto;margin:0;padding:0;border:0;background:none;min-height:0;border-radius:10px;cursor:pointer;line-height:0}
+#topbar .logo-banner img{display:block;height:80px;width:auto;max-width:none;border-radius:10px}
+.top-victory{display:flex;flex-direction:column;gap:1px;flex:1 1 0;min-width:0;font-size:.66rem;color:#c4d0db;line-height:1.2}
+.top-victory select{width:100%;min-width:0;background:#28435b;color:#fff;border:1px solid #84a9c5;border-radius:10px;padding:0 6px;font:inherit;font-size:.86rem;min-height:44px}
+.top-victory select:disabled{opacity:.6}
+.top-victory select:focus-visible{outline:3px solid #ffdf77;outline-offset:2px}
+#startBtn{flex:0 0 auto;min-width:92px;padding:6px 10px;font-weight:750}
+.bcard .monster-art-panel{padding:0}
+.center-line .lanes{display:flex;justify-content:center;gap:11px;width:100%}
+.center-line .lanes span{flex:0 0 96px;text-align:center;font-size:.7rem;font-weight:800;letter-spacing:.18em;color:#b4cadb;line-height:1}
+@media(max-width:370px){.center-line .lanes{gap:8px}.center-line .lanes span{flex-basis:92px}#startBtn{min-width:84px;padding:6px 6px}}
+@media(min-width:800px){.top-victory{flex:0 1 220px}#topbar{gap:12px}.center-line .lanes{gap:12px}.center-line .lanes span{flex-basis:112px;font-size:.8rem}}
 </style></head><body>
-<div class="logo-banner"><img src="paremon_logo_center_crop2.png" alt="パレットモンスター（パレモン）のロゴ"></div>
+<header id="topbar"><button id="logoBtn" class="logo-banner" type="button" aria-label="ルールと仮設定を開く"><img src="paremon_logo_center_crop2.png" alt="パレットモンスター（パレモン）のロゴ"></button><label class="top-victory"><span>勝利条件</span><select id="victoryTarget" aria-label="必要な撃破数"><option value="2">2体撃破</option><option value="3">3体撃破</option><option value="4">4体撃破</option></select></label><button id="startBtn" class="primary" type="button">対戦開始</button></header>
 <div id="status" class="sr-only" role="status" aria-live="polite"></div>
 <section class="battle" aria-label="対戦フィールド">
  <div class="team-bar"><strong>相手 AI　↓</strong><span id="opScore" class="pill"></span><span id="opDeck" class="muted"></span></div>
  <div id="battleBody" class="battle-body">
   <div class="field enemy-field"><div id="enemySlots" class="slots"></div><div class="front-label">▼ 相手の前衛</div></div>
-  <div class="center-line" aria-hidden="true"></div>
+  <div class="center-line" aria-hidden="true"><div class="lanes"><span>控え</span><span>前衛</span><span>控え</span></div></div>
   <div class="field player-field"><div class="front-label">▲ あなたの前衛</div><div id="playerSlots" class="slots"></div></div>
   <button id="message" class="message" data-zone="center" aria-live="assertive" aria-label="メッセージを確認して次に進む"><span id="messageText"></span><span id="messageTap" class="tap">タップして進む ▶</span></button>
  </div>
@@ -332,7 +346,7 @@ function doMessage(zone,text,action){if(action)action();sequence([evt(zone,text)
 function button(t,fn,disabled=false,primary=false){let b=document.createElement('button');b.type='button';b.textContent=t;b.disabled=disabled;if(primary)b.classList.add('primary');b.addEventListener('click',fn);return b}
 function add(t,fn,disabled=false,primary=false){$('actions').append(button(t,fn,disabled||!!notice,primary))}
 function cardName(c){return c.kind==='mon'?'モンスター':c.kind==='en'?'エネルギー':c.kind==='tune'?'色調整':'増強'}
-function monView(m,p,front,side){if(!m)return `<div class="empty-slot ${front?'front':''}">${front?'前衛なし':'空き'}</div>`;let c=activeColor(m,p),total=energyTotal(m,p);return `<div class="bcard ${front?'front':''}" aria-label="${esc((side==='enemy'?'相手':'あなた')+(front?'前衛':'控え')+' '+monsterName(m)+' '+colorName(c)+' HP'+(10-m.damage)+'/10 エネルギー実'+m.energy.length+'枚、有効'+total+'枚分')}"><div class="kind">${front?'★ 前衛':'控え'}・${colorName(c)}</div><div class="monster-art-panel" style="background:${artBg(c)}"><img src="${artSrc(m,c)}" alt="${esc(monsterName(m))}"><span class="monster-badge">${colorName(c)}</span></div><span class="monster-name">${esc(monsterName(m))}</span><div class="hp">HP ${Math.max(0,10-m.damage)}/10</div><div class="energy" title="${esc(m.energy.map(n=>NAME[n]).join('・'))}">E ${m.energy.length}枚→${total}分 ${m.energy.length?m.energy.map(n=>NAME[n][0]).join(''):''}</div></div>`}
+function monView(m,p,front,side){if(!m)return `<div class="empty-slot ${front?'front':''}">${front?'前衛なし':'空き'}</div>`;let c=activeColor(m,p),total=energyTotal(m,p);return `<div class="bcard ${front?'front':''}" aria-label="${esc((side==='enemy'?'相手':'あなた')+(front?'前衛':'控え')+' '+monsterName(m)+' '+colorName(c)+' HP'+(10-m.damage)+'/10 エネルギー実'+m.energy.length+'枚、有効'+total+'枚分')}"><div class="monster-art-panel" style="background:${artBg(c)}"><img src="${artSrc(m,c)}" alt="${esc(monsterName(m))}"><span class="monster-badge">${colorName(c)}</span></div><span class="monster-name">${esc(monsterName(m))}</span><div class="hp">HP ${Math.max(0,10-m.damage)}/10</div><div class="energy" title="${esc(m.energy.map(n=>NAME[n]).join('・'))}">E ${m.energy.length}枚→${total}分 ${m.energy.length?m.energy.map(n=>NAME[n][0]).join(''):''}</div></div>`}
 function slots(p,side){return [p.bench[0]||null,p.active,p.bench[1]||null].map((m,i)=>{const allowed=side==='player'&&!notice&&!game.over&&game.turn!=='ai'&&!game.promotion;const id=side+':'+i;return `<div class="slot" data-slot="${id}" role="${allowed?'button':'group'}" tabindex="${allowed?'0':'-1'}" aria-label="${side==='enemy'?'相手':'あなた'}の${i===1?'前衛':'控え'} ${m?colorName(activeColor(m,p)):'空き'}"><div class="${allowed?'selectable':''} ${fieldSelected===id?'picked':''}">${monView(m,p,i===1,side)}</div></div>`}).join('')}
 const isAux=c=>c.kind==='tune'||c.kind==='boost';
 const auxMark=c=>c.kind==='boost'?'+1':'調',auxName=c=>c.kind==='boost'?'増強':'色調整';
@@ -341,8 +355,19 @@ function handView(c){let info=c.kind==='mon'?'HP10／無色':c.kind==='en'?'付�
 function actionLabel(t){let div=document.createElement('div');div.className='action-caption';div.textContent=t;$('actions').append(div)}
 function disabledHint(buttonEl,reason){if(buttonEl.disabled){buttonEl.title=reason;buttonEl.setAttribute('aria-label',buttonEl.textContent+'（使用不可：'+reason+'）')}}
 function action(t,fn,disabled=false,primary=false,reason='現在は使用できません'){let b=button(t,fn,disabled,primary);disabledHint(b,reason);$('actions').append(b);return b}
+// Header controls (logo = rules, 勝利条件, 対戦開始): the victory target can only be chosen, and the match only started, during setup.
+function syncHeader(){
+ const setup=game.turn==='setup',sel=$('victoryTarget'),st=$('startBtn');
+ sel.value=String(game.targetKos);sel.disabled=!setup||!!notice;
+ st.disabled=!(setup&&game.me.active&&!notice&&!$('overlay').classList.contains('show'));
+}
+function openRules(){
+ if($('overlay').classList.contains('show'))return;
+ $('detailContent').innerHTML=[...document.querySelectorAll('.panel.rules details p')].map(p=>`<p>${p.innerHTML}</p>`).join('');
+ modal('ルールと仮設定・詳細','',[['閉じる',()=>{},false]],false);$('modalTitle').textContent='ルールと仮設定';
+}
 function render(){
- const m=game.me,a=game.ai;
+ const m=game.me,a=game.ai;syncHeader();
  $('enemySlots').innerHTML=slots(a,'enemy');$('playerSlots').innerHTML=slots(m,'player');
  $('opScore').textContent=`撃破 ${a.kos}/${game.targetKos}`;$('myScore').textContent=`撃破 ${m.kos}/${game.targetKos}`;
  $('opDeck').textContent=`山札${a.deck.length}／手札${a.hand.length}`;
@@ -380,17 +405,7 @@ function render(){
  if(game.turn==='ai'){$('status').textContent='相手のターン。メッセージを順に進めてください。';return}
  if(game.turn==='setup'){
    $('status').textContent='手札のモンスターを選んで配置し、対戦開始を押してください。';
-   const setting=document.createElement('div');setting.className='victory-setting';
-   const label=document.createElement('label');label.htmlFor='victoryTarget';label.textContent='勝利条件';
-   const select=document.createElement('select');select.id='victoryTarget';select.setAttribute('aria-label','必要な撃破数');
-   for(const count of [2,3,4]){
-     const opt=document.createElement('option');opt.value=String(count);opt.textContent=count+'体撃破';
-     select.append(opt);
-   }
-   select.value=String(game.targetKos);
-   select.addEventListener('change',()=>{game.targetKos=Number(select.value);render()});
-   setting.append(label,select);$('turnControl').append(setting);
-   let b=button('対戦開始',begin,!m.active,true);$('turnControl').append(b);return;
+   return;
  }
  $('status').textContent=`あなたのターン ${game.step+1}回目。手札か場のカードをタップしてください。`;
  $('turnControl').append(button('攻撃せずターン終了',()=>modal('ターンを終了','攻撃せず相手に手番を渡しますか？',[
@@ -638,5 +653,8 @@ $('playerSlots').addEventListener('click',e=>{
 $('playerSlots').addEventListener('keydown',e=>{
  if(e.key==='Enter'||e.key===' '){let el=e.target.closest('[data-slot]');if(el){e.preventDefault();el.click()}}
 });
+$('victoryTarget').addEventListener('change',e=>{if(game.turn==='setup'&&!notice){game.targetKos=Number(e.target.value);render()}});
+$('startBtn').addEventListener('click',()=>{if(game.turn==='setup'&&game.me.active&&!notice&&!$('overlay').classList.contains('show'))begin()});
+$('logoBtn').addEventListener('click',openRules);
 $('message').addEventListener('click',acknowledge);$('restart').addEventListener('click',()=>modal('最初からやり直しますか？','現在の対戦は破棄されます。',[['やり直す',reset]]));reset();
 </script></body></html>

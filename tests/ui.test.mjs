@@ -384,7 +384,10 @@ for (const [name, viewport, geo] of KD8_VIEWPORTS) {
   test(`KD-8 (${name}): species name, HP, energy line and labels are never clipped or overlapping on board and hand cards, for all 5 species`, async () => {
     const { ctx, page, errors } = await openGame(browser, { seed: 3, viewport });
     const bad = [];
-    for (const sp of ['centipede', 'dragon', 'golem', 'knight', 'skeleton']) {
+    // Fonts differ per device (the CI runner's text is wider than this sandbox's): the same checks also run with deliberately wide text.
+    for (const stress of [false, true]) for (const sp of ['centipede', 'dragon', 'golem', 'knight', 'skeleton']) {
+      await page.evaluate(on => { let st = document.getElementById('stressFont'); if (!st) { st = document.createElement('style'); st.id = 'stressFont'; document.head.append(st); }
+        st.textContent = on ? "html,body,button{font-family:'DejaVu Sans',sans-serif !important} .hand-card,.bcard{letter-spacing:.06em}" : ''; }, stress);
       await setup(page, { me: { active: { e: [0, 1], sp }, bench: [{ e: [], sp }, { e: [2], sp }], hand: [{ kind: 'mon' }, { kind: 'mon' }, { kind: 'en', color: 1 }, { kind: 'tune', color: 0 }, { kind: 'boost', color: 1 }] }, ai: { active: { e: [1], sp }, bench: [{ e: [], sp }] }, turn: 'player', step: 1 });
       await page.waitForFunction(() => [...document.images].every(i => i.complete));
       const r = await page.evaluate(sp => { const out = [];

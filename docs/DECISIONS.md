@@ -45,7 +45,7 @@
 
 | ID | 決定 | 理由 | 状態 |
 | --- | --- | --- | --- |
-| D-25 | **KD-8**：`.bcard>(.kind,.monster-name,.hp,.energy)` と `.hand-card>(small,strong,.small)` を `flex-shrink:0`、絵のパネルを `flex:1 1 0; min-height:0`（縮みを絵が吸収。画像は元から `object-fit:contain`） | 画像が縦長になり、固定高さのカードで `overflow:hidden` の文字行が縮められ、種族名とエネルギー行が欠けていた。カード寸法は変えない | 採用 |
+| D-25 | **KD-8**：`.bcard>(.kind,.monster-name,.hp,.energy)` と `.hand-card>(small,strong,.small)` を `flex-shrink:0`、絵のパネルを `flex:1 1 0; min-height:0`（縮みを絵が吸収。画像は元から `object-fit:contain`）。さらに、モンスター手札カードの情報行（`.hand-card>.monster-art-panel~.small`）は折り返さず1行（`nowrap`＋ellipsis） | 画像が縦長になり、固定高さのカードで `overflow:hidden` の文字行が縮められ、種族名とエネルギー行が欠けていた。**CIの環境（幅広のフォント）では「HP10／無色」が360/393pxの手札カードで2行に折り返し、絵が29〜33pxまで潰れた**（CI run 43080089156 で発覚。幅広フォントを模擬するテストで同じ33pxを再現）。カード寸法は変えない | 採用 |
 | D-26 | 試遊版は **GitHub Actions の成果物**（Privateリポジトリ内、14日）。Pages・外部ホスティング・PWA化・Public化はしない。mainへのマージ不要（PRのCIで作る） | 指示。非公開を保つ | 採用 |
 | D-27 | 成果物は「検証済みZIPを展開したフォルダ」をアップロードする（`upload-artifact` がZIP化するため、ダウンロードされる `paremon-playtest-<短いSHA>.zip` の直下に `index.html` 等が並び、ZIPの二重化が起きない）。PRイベントの `GITHUB_SHA` はマージコミットなので、PRのhead SHAを `PLAYTEST_SHA` として渡す | 指示（余分な親ディレクトリなし）。名前に実際のHEADを使う | 採用 |
 | D-28 | アクションの版：checkout／setup-node／upload-artifact を v6（v5〜v7が公開されており、v5以降はNode 24対応）。Node 20非推奨警告の解消が目的で、テスト変更・待機の延長はしていない | 公式の現行版 | 採用 |

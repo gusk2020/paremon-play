@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # on pull_request events GITHUB_SHA is the merge commit; the playtest ZIP must name the PR's real head commit
+      PLAYTEST_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PLAYTEST_PR: ${{ github.event.pull_request.html_url || 'https://github.com/gusk2020/paremon-play' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Regression tests (static, rules, UI, seeded full games, images, playtest ZIP)
+        run: npm test
+      - name: Build the private playtest ZIP
+        id: zip
+        run: |
+          bash tools/build_playtest.sh "$PLAYTEST_SHA" dist "$PLAYTEST_PR"
+          ZIP="$(ls dist/paremon-playtest-*.zip)"
+          unzip -tq "$ZIP"
+          unzip -Z "$ZIP"
+          mkdir dist/playtest && unzip -q "$ZIP" -d dist/playtest
+          test -f dist/playtest/index.html && test "$(find dist/playtest/paremon_monsters2 -name '*.png' | wc -l)" -eq 35
+          echo "short=${PLAYTEST_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          ls -l "$ZIP"
+      - name: "Build the standalone playtest HTML (for Android, the game + logo + 35 pictures in ONE file)"
+        run: |
+          node tools/build_standalone.mjs "$PLAYTEST_SHA" dist/standalone
+          test "$(ls dist/standalone | wc -l)" -eq 1
+          ls -l dist/standalone
+      # The artifact is zipped by GitHub: the download "paremon-playtest-<short>.zip" contains index.html, PLAYTEST.txt,
+      # the logo and paremon_monsters2/ at its top level (no extra folder, no zip inside a zip). Private repo: visible only
+      # to people with access to the repository; kept 14 days.
+      - uses: actions/upload-artifact@v6
+        with:
+          name: paremon-playtest-${{ steps.zip.outputs.short }}
+          path: dist/playtest/
+          retention-days: 14
+          if-no-files-found: error
+      # Pixel 7a: the multi-file ZIP above shows no pictures when opened through Android's content:// URI. This artifact holds ONE
+      # file (paremon-playtest-standalone-<short>.html): download, extract, open that file. Private, 14 days.
+      - uses: actions/upload-artifact@v6
+        with:
+          name: paremon-playtest-standalone-${{ steps.zip.outputs.short }}
+          path: dist/standalone/
+          retention-days: 14
+          if-no-files-found: error

@@ -1,0 +1,748 @@
+{
+ "monsters": {
+  "centipede": {
+   "sheet": "worm_A.png",
+   "sheet_size": [
+    1376,
+    768
+   ],
+   "split_x": 591,
+   "pictures": {
+    "centipede_0.png": {
+     "size": [
+      576,
+      674
+     ],
+     "sheet_box": [
+      25,
+      83,
+      574,
+      714
+     ],
+     "paste_offset": [
+      14,
+      29
+     ],
+     "scale": 1.0,
+     "area_px": 83680
+    },
+    "centipede_1.png": {
+     "size": [
+      259,
+      303
+     ],
+     "sheet_box": [
+      620,
+      66,
+      850,
+      355
+     ],
+     "paste_offset": [
+      14,
+      8
+     ],
+     "scale": 1.0,
+     "area_px": 44574
+    },
+    "centipede_2.png": {
+     "size": [
+      259,
+      303
+     ],
+     "sheet_box": [
+      864,
+      69,
+      1104,
+      355
+     ],
+     "paste_offset": [
+      10,
+      11
+     ],
+     "scale": 1.0,
+     "area_px": 44699
+    },
+    "centipede_3.png": {
+     "size": [
+      259,
+      303
+     ],
+     "sheet_box": [
+      1121,
+      63,
+      1356,
+      354
+     ],
+     "paste_offset": [
+      12,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 45399
+    },
+    "centipede_4.png": {
+     "size": [
+      259,
+      303
+     ],
+     "sheet_box": [
+      610,
+      418,
+      851,
+      699
+     ],
+     "paste_offset": [
+      9,
+      16
+     ],
+     "scale": 1.0,
+     "area_px": 44813
+    },
+    "centipede_5.png": {
+     "size": [
+      259,
+      303
+     ],
+     "sheet_box": [
+      865,
+      419,
+      1106,
+      699
+     ],
+     "paste_offset": [
+      9,
+      17
+     ],
+     "scale": 1.0,
+     "area_px": 43905
+    },
+    "centipede_6.png": {
+     "size": [
+      259,
+      303
+     ],
+     "sheet_box": [
+      1119,
+      420,
+      1360,
+      699
+     ],
+     "paste_offset": [
+      9,
+      18
+     ],
+     "scale": 1.0,
+     "area_px": 45586
+    }
+   }
+  },
+  "knight": {
+   "sheet": "armor_A.png",
+   "sheet_size": [
+    1376,
+    768
+   ],
+   "split_x": 592,
+   "pictures": {
+    "knight_0.png": {
+     "size": [
+      586,
+      652
+     ],
+     "sheet_box": [
+      19,
+      76,
+      576,
+      697
+     ],
+     "paste_offset": [
+      14,
+      17
+     ],
+     "scale": 1.0,
+     "area_px": 77343
+    },
+    "knight_1.png": {
+     "size": [
+      257,
+      286
+     ],
+     "sheet_box": [
+      609,
+      70,
+      853,
+      344
+     ],
+     "paste_offset": [
+      6,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 41287
+    },
+    "knight_2.png": {
+     "size": [
+      257,
+      286
+     ],
+     "sheet_box": [
+      864,
+      70,
+      1107,
+      344
+     ],
+     "paste_offset": [
+      7,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 38427
+    },
+    "knight_3.png": {
+     "size": [
+      257,
+      286
+     ],
+     "sheet_box": [
+      1118,
+      70,
+      1362,
+      344
+     ],
+     "paste_offset": [
+      6,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 42891
+    },
+    "knight_4.png": {
+     "size": [
+      257,
+      286
+     ],
+     "sheet_box": [
+      609,
+      417,
+      852,
+      688
+     ],
+     "paste_offset": [
+      7,
+      9
+     ],
+     "scale": 1.0,
+     "area_px": 40407
+    },
+    "knight_5.png": {
+     "size": [
+      257,
+      286
+     ],
+     "sheet_box": [
+      864,
+      417,
+      1107,
+      688
+     ],
+     "paste_offset": [
+      7,
+      9
+     ],
+     "scale": 1.0,
+     "area_px": 39127
+    },
+    "knight_6.png": {
+     "size": [
+      257,
+      286
+     ],
+     "sheet_box": [
+      1118,
+      417,
+      1361,
+      688
+     ],
+     "paste_offset": [
+      7,
+      9
+     ],
+     "scale": 1.0,
+     "area_px": 42365
+    }
+   }
+  },
+  "golem": {
+   "sheet": "golem_A.png",
+   "sheet_size": [
+    1376,
+    768
+   ],
+   "split_x": 600,
+   "pictures": {
+    "golem_0.png": {
+     "size": [
+      656,
+      641
+     ],
+     "sheet_box": [
+      42,
+      135,
+      588,
+      734
+     ],
+     "paste_offset": [
+      55,
+      27
+     ],
+     "scale": 1.0,
+     "area_px": 84181
+    },
+    "golem_1.png": {
+     "size": [
+      263,
+      257
+     ],
+     "sheet_box": [
+      613,
+      162,
+      859,
+      405
+     ],
+     "paste_offset": [
+      8,
+      8
+     ],
+     "scale": 1.0,
+     "area_px": 36736
+    },
+    "golem_2.png": {
+     "size": [
+      263,
+      257
+     ],
+     "sheet_box": [
+      864,
+      162,
+      1115,
+      407
+     ],
+     "paste_offset": [
+      6,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 38868
+    },
+    "golem_3.png": {
+     "size": [
+      263,
+      257
+     ],
+     "sheet_box": [
+      1130,
+      162,
+      1367,
+      405
+     ],
+     "paste_offset": [
+      13,
+      8
+     ],
+     "scale": 1.0,
+     "area_px": 36608
+    },
+    "golem_4.png": {
+     "size": [
+      263,
+      257
+     ],
+     "sheet_box": [
+      614,
+      449,
+      851,
+      685
+     ],
+     "paste_offset": [
+      13,
+      15
+     ],
+     "scale": 1.0,
+     "area_px": 34625
+    },
+    "golem_5.png": {
+     "size": [
+      263,
+      257
+     ],
+     "sheet_box": [
+      869,
+      449,
+      1111,
+      686
+     ],
+     "paste_offset": [
+      10,
+      14
+     ],
+     "scale": 1.0,
+     "area_px": 36607
+    },
+    "golem_6.png": {
+     "size": [
+      263,
+      257
+     ],
+     "sheet_box": [
+      1130,
+      449,
+      1364,
+      686
+     ],
+     "paste_offset": [
+      14,
+      14
+     ],
+     "scale": 1.0,
+     "area_px": 32800
+    }
+   }
+  },
+  "skeleton": {
+   "sheet": "skeletons_A.png",
+   "sheet_size": [
+    1677,
+    938
+   ],
+   "split_x": 734,
+   "pictures": {
+    "skeleton_0.png": {
+     "size": [
+      725,
+      766
+     ],
+     "sheet_box": [
+      16,
+      137,
+      714,
+      852
+     ],
+     "paste_offset": [
+      14,
+      37
+     ],
+     "scale": 1.0,
+     "area_px": 170931
+    },
+    "skeleton_1.png": {
+     "size": [
+      331,
+      350
+     ],
+     "sheet_box": [
+      758,
+      96,
+      1063,
+      422
+     ],
+     "paste_offset": [
+      13,
+      18
+     ],
+     "scale": 1.0,
+     "area_px": 58516
+    },
+    "skeleton_2.png": {
+     "size": [
+      331,
+      350
+     ],
+     "sheet_box": [
+      1059,
+      96,
+      1363,
+      422
+     ],
+     "paste_offset": [
+      14,
+      18
+     ],
+     "scale": 1.0,
+     "area_px": 65334
+    },
+    "skeleton_3.png": {
+     "size": [
+      331,
+      350
+     ],
+     "sheet_box": [
+      1357,
+      96,
+      1664,
+      422
+     ],
+     "paste_offset": [
+      12,
+      18
+     ],
+     "scale": 1.0,
+     "area_px": 64562
+    },
+    "skeleton_4.png": {
+     "size": [
+      331,
+      350
+     ],
+     "sheet_box": [
+      756,
+      517,
+      1062,
+      850
+     ],
+     "paste_offset": [
+      12,
+      11
+     ],
+     "scale": 1.0,
+     "area_px": 62844
+    },
+    "skeleton_5.png": {
+     "size": [
+      331,
+      350
+     ],
+     "sheet_box": [
+      1058,
+      523,
+      1361,
+      850
+     ],
+     "paste_offset": [
+      14,
+      17
+     ],
+     "scale": 1.0,
+     "area_px": 68232
+    },
+    "skeleton_6.png": {
+     "size": [
+      331,
+      350
+     ],
+     "sheet_box": [
+      1358,
+      512,
+      1662,
+      850
+     ],
+     "paste_offset": [
+      14,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 70374
+    }
+   }
+  },
+  "dragon": {
+   "sheet": "dragon_A.png",
+   "sheet_size": [
+    1376,
+    768
+   ],
+   "split_x": 598,
+   "pictures": {
+    "dragon_0.png": {
+     "size": [
+      618,
+      646
+     ],
+     "sheet_box": [
+      36,
+      78,
+      588,
+      691
+     ],
+     "paste_offset": [
+      33,
+      18
+     ],
+     "scale": 1.0,
+     "area_px": 54978
+    },
+    "dragon_1.png": {
+     "size": [
+      264,
+      276
+     ],
+     "sheet_box": [
+      611,
+      70,
+      862,
+      331
+     ],
+     "paste_offset": [
+      6,
+      9
+     ],
+     "scale": 1.0,
+     "area_px": 36906
+    },
+    "dragon_2.png": {
+     "size": [
+      264,
+      276
+     ],
+     "sheet_box": [
+      868,
+      71,
+      1114,
+      331
+     ],
+     "paste_offset": [
+      9,
+      10
+     ],
+     "scale": 1.0,
+     "area_px": 36324
+    },
+    "dragon_3.png": {
+     "size": [
+      264,
+      276
+     ],
+     "sheet_box": [
+      1119,
+      70,
+      1361,
+      331
+     ],
+     "paste_offset": [
+      11,
+      9
+     ],
+     "scale": 1.0,
+     "area_px": 35519
+    },
+    "dragon_4.png": {
+     "size": [
+      264,
+      276
+     ],
+     "sheet_box": [
+      609,
+      417,
+      861,
+      680
+     ],
+     "paste_offset": [
+      6,
+      7
+     ],
+     "scale": 1.0,
+     "area_px": 37626
+    },
+    "dragon_5.png": {
+     "size": [
+      264,
+      276
+     ],
+     "sheet_box": [
+      866,
+      417,
+      1115,
+      680
+     ],
+     "paste_offset": [
+      8,
+      7
+     ],
+     "scale": 1.0,
+     "area_px": 36939
+    },
+    "dragon_6.png": {
+     "size": [
+      264,
+      276
+     ],
+     "sheet_box": [
+      1117,
+      416,
+      1361,
+      680
+     ],
+     "paste_offset": [
+      10,
+      6
+     ],
+     "scale": 1.0,
+     "area_px": 36304
+    }
+   }
+  }
+ },
+ "logo": {
+  "sheet": "logo_5_drafts.png",
+  "box": [
+   532,
+   190,
+   929,
+   448
+  ],
+  "kept_components": [
+   [
+    57425,
+    532,
+    191,
+    927,
+    408
+   ],
+   [
+    1499,
+    860,
+    385,
+    913,
+    445
+   ],
+   [
+    303,
+    583,
+    416,
+    612,
+    442
+   ],
+   [
+    1878,
+    706,
+    416,
+    852,
+    445
+   ],
+   [
+    632,
+    618,
+    417,
+    669,
+    443
+   ],
+   [
+    58,
+    674,
+    419,
+    684,
+    426
+   ],
+   [
+    161,
+    674,
+    423,
+    699,
+    443
+   ]
+  ],
+  "size": [
+   413,
+   274
+  ]
+ }
+}

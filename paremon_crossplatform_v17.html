@@ -178,16 +178,17 @@ body{padding:5px 7px 48px}
 #modalButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
 #modalButtons button{min-height:54px;line-height:1.25}
 #modalText{font-size:.87rem;color:#d2e2ed;margin:8px 0}
-.turn-control{display:flex;justify-content:center;padding:3px 8px 7px}
-.turn-control button{width:min(100%,320px);font-weight:750}
-.turn-control:empty{display:none}
 
 /* v0.12: drag and drop; preserve v0.8/v0.10 field card geometry */
-#hand [data-drag-hand],#playerSlots [data-slot]{touch-action:none;user-select:none;-webkit-user-select:none}
+#playerSlots [data-slot]{touch-action:none;user-select:none;-webkit-user-select:none}
+#hand [data-drag-hand]{touch-action:pan-x;user-select:none;-webkit-user-select:none}   /* horizontal swipe scrolls the hand; vertical movement still starts a drag */
 #dragGhost{position:fixed;z-index:99;pointer-events:none;transform:translate(-50%,-50%);background:#2b455e;border:2px solid #ffe28d;border-radius:12px;padding:16px 12px;min-width:94px;min-height:78px;display:flex;justify-content:center;align-items:center;font-weight:800;box-shadow:0 7px 25px #000b;opacity:.96}
 .drag-valid .bcard,.drag-valid .empty-slot{outline:2px dashed #8ac9ea;outline-offset:2px}
 .drag-target .bcard,.drag-target .empty-slot{outline:4px solid #ffe28d;outline-offset:2px}
 body.dragging #hand{overflow-x:visible}
+/* Repair (v0.17 migration): a mouse drag that starts on a card picture was hijacked by the browser's native image drag (pointercancel).
+   Pictures inside draggable cards must not capture the pointer. Touch behaviour is unchanged. */
+#hand img,#playerSlots img{pointer-events:none;-webkit-user-drag:none;user-drag:none}
 
 /* v0.13: color from energies, retain v0.12 board geometry */
 .bcard .energy{font-size:.64rem;letter-spacing:-.03em}
@@ -227,30 +228,70 @@ body.dragging #hand{overflow-x:visible}
  .hand-card strong {font-size:.87rem;}
  .hand-panel h2 {font-size:1rem;}
  .hand-panel .hint {font-size:.78rem;}
- .turn-control {max-width:800px;margin:auto;}
  .panel:not(.hand-panel) {max-width:800px;margin:12px auto;}
  #modal {width:min(100%,480px);}
 }
 @media (hover:hover) and (pointer:fine) {
  #hand button:hover:not(:disabled),#playerSlots [data-slot]:hover {filter:brightness(1.12);}
 }
+/* KD-8 (migration): fixed-height cards squeezed their text lines (overflow:hidden items shrink in a flex column) once the
+   pictures became taller, which clipped the top of every species name and the energy line. Text lines keep their own
+   height; the picture panel (which already scales its image with object-fit:contain) absorbs the squeeze.
+   Card, slot and hand sizes are unchanged. */
+.bcard>.kind,.bcard>.monster-name,.bcard>.hp,.bcard>.energy,.hand-card>small,.hand-card>strong,.hand-card>.small{flex-shrink:0}
+.bcard>.monster-art-panel,.hand-card>.monster-art-panel{flex:1 1 0;min-height:0}
+/* Wider fonts (the info line "HP10／無色" on a 62-69px hand card) wrapped to two lines and squeezed the picture to ~30px.
+   On monster cards that line stays on one line (ellipsis only if a font is extremely wide). Auxiliary cards (no picture) keep wrapping. */
+.hand-card>.monster-art-panel~.small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* UI adjustment: one-row header, bigger pictures in field cards, lane captions in the central band */
+#topbar{display:flex;align-items:center;gap:8px;margin:2px 0 6px}
+#topbar .logo-banner{flex:0 0 auto;margin:0;padding:0;border:0;background:none;min-height:0;border-radius:10px;cursor:pointer;line-height:0}
+#topbar .logo-banner img{display:block;height:80px;width:auto;max-width:none;border-radius:10px}
+.top-victory{display:flex;flex-direction:column;gap:1px;flex:1 1 0;min-width:0;font-size:.66rem;color:#c4d0db;line-height:1.2}
+.top-victory select{width:100%;min-width:0;background:#28435b;color:#fff;border:1px solid #84a9c5;border-radius:10px;padding:0 6px;font:inherit;font-size:.86rem;min-height:44px}
+.top-victory select:disabled{opacity:.6}
+.top-victory select:focus-visible{outline:3px solid #ffdf77;outline-offset:2px}
+#startBtn{flex:0 0 auto;min-width:92px;padding:6px 10px;font-weight:750}
+.bcard .monster-art-panel{padding:0}
+.center-line .lanes{display:flex;justify-content:center;gap:11px;width:100%}
+.center-line .lanes span{flex:0 0 96px;text-align:center;font-size:.7rem;font-weight:800;letter-spacing:.18em;color:#b4cadb;line-height:1}
+@media(max-width:370px){.center-line .lanes{gap:8px}.center-line .lanes span{flex-basis:92px}#startBtn{min-width:84px;padding:6px 6px}}
+@media(min-width:800px){.top-victory{flex:0 1 220px}#topbar{gap:12px}.center-line .lanes{gap:12px}.center-line .lanes span{flex-basis:112px;font-size:.8rem}}
+.proto-tag{font-size:.62rem;color:#f4df9b;text-align:center;margin:-3px 0 5px;line-height:1.2}
+#resultText{white-space:pre-wrap;font:inherit;font-size:.72rem;margin:6px 0;line-height:1.55;color:#dbe7f1}
+#resultPanel h2{font-size:.82rem;margin:0}
+
+/* new card illustrations (energy / colour adjust / boost) */
+.swatch.art{position:relative;overflow:hidden;padding:0}
+.swatch.art .card-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-select:none}
+.swatch.art .card-art{object-fit:cover}.swatch.art.aux-mark .card-art{object-position:50% 50%}
+.swatch.art .art-label{position:absolute;right:2px;bottom:1px;z-index:1;padding:0 4px;border-radius:999px;background:rgba(10,18,28,.78);color:#fff;font-size:.62rem;font-weight:800;line-height:1.3}
+.hand-card .swatch.art{flex:1 1 auto;height:auto;min-height:30px}
+.card-art-panel{position:relative;height:150px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.card-art-panel .card-art{max-width:100%;max-height:100%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
+
+/* field = white plastic watercolour palette (look only; no layout change) */
+.field::before{content:"";position:absolute;inset:0 2px;border-radius:44px 44px 44px 44px / 38px 38px 38px 38px;background:radial-gradient(ellipse at 28% 18%,#ffffff 0,rgba(255,255,255,0) 55%),linear-gradient(180deg,#fbfdff 0%,#eef2f6 55%,#dde4ec 100%);box-shadow:inset 0 2px 3px #fff,inset 0 -5px 9px rgba(120,140,160,.35),0 3px 8px rgba(0,0,0,.45);pointer-events:none;z-index:0}
+.field>.slots{z-index:1}
+.field .empty-slot{color:#5b6f82;border-color:#8ba0b3;background:rgba(255,255,255,.35)}
 </style></head><body>
-<div class="logo-banner"><img src="paremon_logo_center_crop2.png" alt="パレモンのロゴ案（中央のニンテンドー純正風デザイン）"></div>
+<header id="topbar"><button id="logoBtn" class="logo-banner" type="button" aria-label="ルールと仮設定を開く"><img src="paremon_logo_center_crop2.png" alt="パレットモンスター（パレモン）のロゴ"></button><label class="top-victory"><span>勝利条件</span><select id="victoryTarget" aria-label="必要な撃破数"><option value="2">2体撃破</option><option value="3">3体撃破</option><option value="4">4体撃破</option></select></label><button id="startBtn" class="primary" type="button">対戦開始</button></header>
+<div class="proto-tag">バランス試作2／仮設定（確定仕様ではありません）</div>
 <div id="status" class="sr-only" role="status" aria-live="polite"></div>
 <section class="battle" aria-label="対戦フィールド">
  <div class="team-bar"><strong>相手 AI　↓</strong><span id="opScore" class="pill"></span><span id="opDeck" class="muted"></span></div>
  <div id="battleBody" class="battle-body">
   <div class="field enemy-field"><div id="enemySlots" class="slots"></div><div class="front-label">▼ 相手の前衛</div></div>
-  <div class="center-line" aria-hidden="true"></div>
+  <div class="center-line" aria-hidden="true"><div class="lanes"><span>控え</span><span>前衛</span><span>控え</span></div></div>
   <div class="field player-field"><div class="front-label">▲ あなたの前衛</div><div id="playerSlots" class="slots"></div></div>
   <button id="message" class="message" data-zone="center" aria-live="assertive" aria-label="メッセージを確認して次に進む"><span id="messageText"></span><span id="messageTap" class="tap">タップして進む ▶</span></button>
  </div>
  <div class="team-bar"><strong>あなた　↑</strong><span id="myScore" class="pill"></span><span id="myDeck" class="muted"></span></div>
 </section>
 <section class="panel hand-panel"><div class="row"><h2>手札 <span id="handCount" class="pill"></span></h2><small>横にスライド可能</small></div><div id="hand" class="hand"></div><div id="handHint" class="hint"></div></section>
-<div id="turnControl" class="turn-control" aria-live="polite"></div>
+<section class="panel" id="resultPanel" hidden><h2>対戦結果（バランス試作2・新しい順）</h2><pre id="resultText"></pre><button id="copyResult" type="button">結果をコピー</button> <small id="copyNote" class="muted"></small></section>
 <section class="panel"><button id="restart" type="button">最初から</button><details><summary>対戦履歴を開く</summary><div id="log" class="history"></div></details></section>
-<section class="panel rules"><details><summary>ルールと仮設定</summary><p>確定事項：山札30枚、初期手札5枚、毎ターン1枚補充、前衛1体＋控え最大2体、基本エネルギー付与1ターン1枚、攻撃後ターン終了、先攻初回は攻撃不可、弱点側のダメージ2倍、対戦開始前に選んだ2〜4体撃破、または相手の場が全滅で勝利。通常交代はエネルギー1枚を捨て1ターン1回。進化・特殊状態は初期試作には入れません。</p><p><strong>仮ルール：</strong>全モンスターHP10、基本攻撃2（任意色エネルギー1枚）、強攻撃3（自色1枚＋任意色1枚）。色調整で前衛の属性を一時変更、増強で攻撃+1。デッキ配分はモンスター12、エネルギー12、色調整3、増強3。混色の科学的な計算は未実装です。属性の相性は紫→青→緑→黄→橙→赤→紫。エネルギー0枚は無色。最初に付けたエネルギーの色がベースカラーです。同色の追加エネルギーは2枚分、異色は1枚分、補色は付与できません。色調整では一時的にベースカラーを変更し、同色はすべて2枚分、補色は0枚分として再計算します。</p><p>色は必ず色名と数値でも表示。音声・点字機器での実機確認は未実施です。</p></details></section>
+<section class="panel rules"><details><summary>ルールと仮設定</summary><p><strong>バランス試作2（仮設定）</strong>：確定した仕様ではなく、新ルールを実際に遊んで比べるための仮ルールです。元のv0.17・試作1のルールはGit履歴に残っています。</p><p><strong>確定事項</strong>：前衛1体＋控え最大2体、相性は紫→青→緑→黄→橙→赤→紫（有利側の攻撃だけダメージ2倍）、補色は赤↔緑・橙↔青・黄↔紫（現在色の補色エネルギーは通常付与できない）、先攻の最初のターンは攻撃不可、攻撃後ターン終了、エネルギー0枚は無色、倒れたモンスターのエネルギーはすべて失う、同色は効率が良く多色は柔軟（色調整の候補が増える）。</p><p><strong>モンスター（仮）</strong>：5種で最大HP・攻撃補正・必要エネルギー・山札の枚数が違います（ムカデ＝速攻 HP8・4枚／骸骨＝標準 HP10・3枚／ゴーレム＝耐久 HP14・2枚／騎士＝重量 HP12・2枚／ドラゴン＝高火力 HP9・1枚）。強い個体ほど必要エネルギーが多く、枚数は少ない（レア）。数値は1つの表（MON）で管理しています。</p><p><strong>山札と攻撃（仮）</strong>：モンスター山札12枚と育成山札18枚（エネルギー12・色調整3・増強3）。最初の手札はモンスター2＋育成3。毎ターン、山札を選んで1枚引き、さらに育成山札から追加で1枚。基本攻撃は2、強攻撃は3から、有効エネルギーが増えると成長（基本は3と5で+1・最大4、強は4と6で+1・最大5）。モンスターごとの補正を足し、現在色の実カードが2枚以上なら+1。増強Aを足してから弱点で2倍。</p><p><strong>付与と色調整</strong>：付与は通常枠1枚（前衛か控え）＋控え専用の追加枠1枚を毎ターン。色調整は1ターン1回（前衛のみ）で、A＝前衛に付いている色へ一時変更、B＝手札のエネルギー1枚を使って一時変更（そのエネルギーは付与されず捨て札）。ターン終了で元の色に戻り、有効量は再計算されます。</p><p><strong>増強（1種類・使うときにA/B）</strong>：A＝このターンの攻撃を強化（基本+2・強+1、弱点2倍の前に加算）。B＝相手の控え1体を指定して前衛から基本攻撃（弱点2倍なし・増強値なし。基本攻撃のエネルギー条件が必要で、ターン内の攻撃1回を使う）。控えを倒すと撃破に数えます。1ターン最大1枚で、攻撃できない状態では使えません（カードだけ消費されることはありません）。</p><p><strong>前に出る／下がる（仮）</strong>：前に出るのは無料（手札→前衛／手札→控え／控え→前衛）。下がるにはエネルギー1枚を捨てます。①前衛と控えの交代＝前衛のエネルギー1枚を捨てる。②手札へ戻す＝その控えのエネルギー1枚を使い、付いているエネルギーは全て捨て札になり、モンスターはHP満タンの新しいカードとして手札に戻る。③エネルギー全回収＝その控えに付いているエネルギーが全て手札に戻る代わりに、そのモンスターはこの対戦から消滅（相手の撃破には数えない）。①②③は合計で1ターン1回（付与済みエネルギー1枚以上が必要）。倒れた後の強制補充・最初の配置は回数に数えません。控えでのHP自然回復はありません。手札の上限はありません。自分の最後のモンスターを消滅させて手持ち・山札・場のモンスターが0になると、補充不能で負けです。</p><p><strong>勝敗</strong>：必要な撃破数に達した側の勝ち。前衛が倒れたら控え→手札→モンスター山札の順に補充し、どれも無ければ補充不能で負け。山札切れでは負けません。各自40ターンで決着しなければ撃破数で判定（同数は引き分け）。</p><p><strong>ターン終了</strong>：自分の前衛（または空の前衛欄）をタップして出るメニューの「ターン終了」から（確認あり）。</p><p>色は必ず色名と数値でも表示。音声・点字機器での実機確認は未実施です。</p></details></section>
 <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div id="modal"><h2 id="modalTitle"></h2><p id="modalText"></p><div id="detailContent"></div><div id="modalButtons"></div></div></div>
 <script>
 'use strict';
@@ -261,13 +302,45 @@ const complementary=(a,b)=>a!==null&&b!==null&&(a+3)%6===b;
 const $=id=>document.getElementById(id);let game,selected=null,fieldSelected=null,pendingAttack=null,mode=null,uid=0,notice=null,queue=[],onEmpty=null;let dragState=null,suppressCardClickUntil=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fresh=(kind,color)=>({id:++uid,kind,color});
+/* ===== バランス試作2（仮設定。確定仕様ではない）=====
+   元のv0.17ルールはGit履歴（main 11ce283 / 736dbe3 / 6041411）で比較できる。仮の数値はすべてこの表に集めた。 */
+const BAL={name:'バランス試作2',hp:10,   // hp は旧値（モンスター別HPは下の MON 表）
+ basic:{base:2,steps:[3,5],cap:4},   // 基本攻撃：2、有効エネルギー3と5で+1、最大4
+ strong:{base:3,steps:[4,6],cap:5},  // 強攻撃：3、有効エネルギー4と6で+1、最大5（現在色のカード1枚が必要＝従来どおり）
+ sameMin:2,sameBonus:1,              // 現在色と同色の実カードが2枚以上なら攻撃+1（1回のみ）
+ extraDraws:1,startM:2,startG:3,     // 毎ターン育成山札から追加で1枚／最初の手札＝モンスター2＋育成3
+ boostA:{basic:2,strong:1},         // 増強A：今回の攻撃に 基本+2／強+1（弱点2倍の前に加算）
+ benchMax:2,turnCap:40};             // 保険：各自40ターンで決着しなければ撃破数で判定（同数は引き分け）
+/* モンスター別の仮数値表（試作2。ここだけ変えれば全モンスターの強さ・レア度が変わる）
+   hp=最大HP／bOff・sOff=基本・強攻撃の補正（成長後に加算、最低1）／needB・needS=その攻撃に必要な有効エネルギー量／count=モンスター山札12枚のうちの収録枚数（少ないほどレア＝強い） */
+const MON={
+ centipede:{role:'速攻',hp:8, bOff:1,sOff:0,needB:1,needS:2,count:4},
+ skeleton: {role:'標準',hp:10,bOff:0,sOff:0,needB:1,needS:2,count:3},
+ golem:    {role:'耐久',hp:14,bOff:0,sOff:0,needB:1,needS:3,count:2},
+ knight:   {role:'重量',hp:12,bOff:0,sOff:1,needB:2,needS:3,count:2},
+ dragon:   {role:'高火力',hp:9,bOff:1,sOff:2,needB:2,needS:4,count:1}};
+const spec=m=>MON[m&&m.species]||MON.skeleton,maxHp=m=>spec(m).hp,hpLeft=m=>Math.max(0,maxHp(m)-m.damage);
+const RESULTS=[];
+function newStats(){return {swaps:0,returns:0,recovers:0,benchAtks:0,benchKos:0,boostA:0,boostB:0,spPlaced:{},spAtk:{},spKo:{},spKoed:{},turns:0,attacks:0,kos:0,oneShots:0,maxE:0,attached:0,extraAttach:0,placed:0,tunes:0,tuneA:0,tuneB:0}}
+function makeDecks(p){
+ p.deckM=[];p.deckG=[];let n=0;for(const sp of SPECIES)for(let j=0;j<MON[sp].count;j++)p.deckM.push(Object.assign(fresh('mon',n++%6),{species:sp}));for(let i=0;i<6;i++){p.deckG.push(fresh('en',i),fresh('en',i))}
+ for(let i=0;i<3;i++)p.deckG.push(fresh('tune',i*2),fresh('boost',i*2+1));shuffle(p.deckM);shuffle(p.deckG)}
+function player(){const p={deckM:[],deckG:[],hand:[],active:null,bench:[],kos:0,attached:false,attachedBench:false,retreated:false,tuned:false,boosted:false,tuneColor:null,boostA:false,discard:[],removed:[],st:newStats()};makeDecks(p);return p}
+function drawFrom(p,w){const d=w==='M'?p.deckM:p.deckG;if(!d.length)return null;const c=d.pop();p.hand.push(c);return c}
+function dealOpening(p){for(let i=0;i<BAL.startM;i++)drawFrom(p,'M');for(let i=0;i<BAL.startG;i++)drawFrom(p,'G')}
+const deckName=w=>w==='M'?'モンスター山札':'育成山札';
+function other(p){return p===game.me?game.ai:game.me}
+const auto=p=>!!game.auto[p===game.me?'me':'ai'];
+const zoneFor=(p,k)=>(p===game.me?'player-':'enemy-')+k;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function makeDeck(){let d=[];for(let i=0;i<6;i++)d.push(fresh('mon',i),fresh('mon',i),fresh('en',i),fresh('en',i));for(let i=0;i<3;i++)d.push(fresh('tune',i*2),fresh('boost',i*2+1));return shuffle(d)}
-function player(){return {deck:makeDeck(),hand:[],active:null,bench:[],kos:0,attached:false,retreated:false,tuned:false,boosted:false,tuneColor:null,bonus:0}}
-function draw(p,n=1){for(let i=0;i<n;i++){if(!p.deck.length)return false;p.hand.push(p.deck.pop())}return true}
-function mulligan(p){let n=0;do{p.deck.push(...p.hand);p.hand=[];shuffle(p.deck);draw(p,5);n++}while(!p.hand.some(x=>x.kind==='mon')&&n<100);return n-1}
-function mon(c){return {id:c.id,species:c.species,color:null,damage:0,energy:[]}}
-function place(p,id,front){let i=p.hand.findIndex(c=>c.id===id&&c.kind==='mon');if(i<0||front&&p.active||!front&&p.bench.length===2)return false;let c=mon(p.hand.splice(i,1)[0]);if(front)p.active=c;else p.bench.push(c);return true}
+// Repair (v0.17 migration): the artwork helpers below were referenced but missing from the delivered file,
+// so render() threw at load. Display only: no rule, number or deck composition changes. Species names are provisional.
+const SPECIES=['centipede','dragon','golem','knight','skeleton'],SPECIES_NAME={centipede:'ムカデ',dragon:'ドラゴン',golem:'ゴーレム',knight:'騎士',skeleton:'骸骨'};
+const monsterName=m=>SPECIES_NAME[m&&m.species]||'モンスター';
+const artSrc=(m,c)=>`paremon_monsters2/${SPECIES.includes(m&&m.species)?m.species:SPECIES[0]}_${c===null||c===undefined?0:c+1}.png`;
+const artBg=c=>'linear-gradient(180deg,#e8eef5,#789)';
+function mon(c){return {id:c.id,species:c.species,cardColor:c.color||0,color:null,damage:0,energy:[]}}
+function place(p,id,front){let i=p.hand.findIndex(c=>c.id===id&&c.kind==='mon');if(i<0||front&&p.active||!front&&p.bench.length>=BAL.benchMax)return false;let c=mon(p.hand.splice(i,1)[0]);if(front)p.active=c;else p.bench.push(c);p.st.placed++;p.st.spPlaced[c.species]=(p.st.spPlaced[c.species]||0)+1;return true}
 function take(p,id){let i=p.hand.findIndex(c=>c.id===id);return i<0?null:p.hand.splice(i,1)[0]}
 function who(p){return p===game.me?'あなた':'相手'}
 // The original card color stays as artwork metadata; monster battle color comes from energy.
@@ -288,9 +361,130 @@ function energyTotal(m,p){return energyCounts(m,p).reduce((a,b)=>a+b,0)}
 function cost(p,strong){
  if(!p.active)return false;
  const counts=energyCounts(p.active,p),total=counts.reduce((a,b)=>a+b,0);
- if(!strong)return total>=1;
- const b=eff(p);return b!==null&&counts[b]>=1&&total>=2;
+ const sp=spec(p.active);if(!strong)return total>=sp.needB;
+ const b=eff(p);return b!==null&&counts[b]>=1&&total>=Math.max(2,sp.needS);
 }
+
+function canAttackNow(p){return !(p===game.me&&game.step===0)}
+function attackPower(p,strong,m=p.active){const total=m?energyTotal(m,p):0,b=m?activeColor(m,p):null,T=strong?BAL.strong:BAL.basic;
+ const off=m?(strong?spec(m).sOff:spec(m).bOff):0;
+ const grown=Math.max(1,Math.min(T.cap,T.base+T.steps.filter(s=>total>=s).length)+off);
+ const same=m&&b!==null&&m.energy.filter(c=>c===b).length>=BAL.sameMin?BAL.sameBonus:0;
+ const boost=p.boostA&&m&&m===p.active?(strong?BAL.boostA.strong:BAL.boostA.basic):0;
+ return {grown,same,boost,off,sum:grown+same+boost,total}}
+function computeAttack(p,o,strong){const att=eff(p),def=o.active,dc=def?activeColor(def,o):null,pw=attackPower(p,strong),weak=att!==null&&dc!==null&&att===(dc+1)%6;return {pw,weak,dmg:pw.sum*(weak?2:1)}}
+const attackText=(strong,a)=>`${strong?'強攻撃':'基本攻撃'}：${a.pw.grown}${a.pw.same?`＋同色${a.pw.same}`:''}${a.pw.boost?`＋増強${a.pw.boost}`:''}${a.weak?' ×弱点2':''} = ${a.dmg}ダメージ`;
+// attach slots: 1 normal card per turn (front or bench) + 1 extra card per turn that may only go to the bench
+function attachSlot(p,t){if(t!==p.active&&!p.attachedBench)return 'extra';return p.attached?null:'normal'}
+function attachBlock(p,t,col){if(!t)return '付与するモンスターがいません';if(!canAttach(t,col,p))return '補色のため付与できません';if(!attachSlot(p,t))return t===p.active?'今ターンの通常の付与枠は使用済み':'今ターンの付与枠（通常・控え追加）は使用済み';return null}
+function doAttach(p,t,card){const slot=attachSlot(p,t);take(p,card.id);t.energy.push(card.color);if(slot==='extra'){p.attachedBench=true;p.st.extraAttach++}else p.attached=true;p.st.attached++;return slot}
+// 増強（1種類・使用時にA/B）：A=今回の攻撃を強化／B=相手の控え1体へ基本攻撃（ターン内の攻撃1回を使う）
+function boostBlock(p,mode){const o=other(p);
+ if(p.boosted)return '今ターンは増強済みです';if(!p.active)return '前衛がいません';
+ if(!canAttackNow(p))return '先攻の最初のターンは攻撃できません';
+ if(!cost(p,false))return `基本攻撃に必要な有効エネルギー（${spec(p.active).needB}以上）がありません`;
+ if(mode==='A'&&!o.active)return '相手に前衛がいません';
+ if(mode==='B'&&!o.bench.length)return '相手に控えがいません';
+ return null}
+function doBoostA(p,card){take(p,card.id);p.boosted=true;p.boostA=true;p.st.boostA++}
+function doBoostB(p,card){take(p,card.id);p.boosted=true;p.st.boostB++}
+function benchAttackEvents(p,idx){const o=other(p),t=o.bench[idx];if(!t||!cost(p,false))return[];
+ const pw=attackPower(p,false),dmg=pw.grown+pw.same,lethal=t.damage+dmg>=maxHp(t),oneShot=lethal&&t.damage===0,sp=p.active.species;
+ p.st.attacks++;p.st.benchAtks++;p.st.maxE=Math.max(p.st.maxE,pw.total);p.st.spAtk[sp]=(p.st.spAtk[sp]||0)+1;
+ const ev=[evt(zoneFor(p,'front'),`${who(p)}が増強Bで${who(o)}の控え（${monsterName(t)}）へ基本攻撃：${pw.grown}${pw.same?`＋同色${pw.same}`:''} = ${dmg}ダメージ（弱点・増強値なし）`,()=>{t.damage+=dmg})];
+ if(!lethal)return ev;
+ ev.push(evt('center',`${who(p)}が控えのモンスターを1体撃破！ ${p.kos+1}/${game.targetKos}（エネルギーは失われた）`,()=>{const i=o.bench.indexOf(t);if(i>=0)o.bench.splice(i,1);p.kos++;p.st.kos++;p.st.benchKos++;p.st.spKo[sp]=(p.st.spKo[sp]||0)+1;o.st.spKoed[t.species]=(o.st.spKoed[t.species]||0)+1;if(oneShot)p.st.oneShots++}));
+ if(p.kos+1>=game.targetKos)ev.push(evt('center',`${who(p)}の勝利！ ${game.targetKos}体撃破`,()=>finish(p===game.me?'me':'ai','ko')));
+ return ev}
+// 控え行動（交代／手札へ戻す／エネルギー全回収）：合計1ターン1回（p.retreated を共有枠として使う）。強制補充・初期配置は枠を使わない。
+const BENCH_ACT_USED='今ターンの控え行動（交代・手札へ戻す・エネルギー全回収は合計1回）は使用済みです';
+function swapBlock(p){if(p.retreated)return BENCH_ACT_USED;if(!p.active)return '前衛がいません';if(!p.bench.length)return '控えがいません';if(!p.active.energy.length)return '前衛にエネルギーが1枚以上必要です（後退コスト）';return null}
+function returnBlock(p,m){if(p.retreated)return BENCH_ACT_USED;if(!m)return '控えがいません';if(!m.energy.length)return 'この控えはエネルギーが付いていないため手札へ戻せません（1枚以上必要）';return null}
+function recoverBlock(p,m){if(p.retreated)return BENCH_ACT_USED;if(!m)return '控えがいません';if(!m.energy.length)return 'この控えは回収できるエネルギーがありません';return null}
+function monstersLeft(p){return (p.active?1:0)+p.bench.length+p.hand.filter(c=>c.kind==='mon').length+p.deckM.length}
+function doSwap(p,bi,ej){const act=p.active,b=p.bench[bi];const [col]=act.energy.splice(ej,1);p.discard.push(col);p.active=b;p.bench[bi]=act;p.retreated=true;p.tuneColor=null;p.st.swaps++}
+function doReturn(p,bi){const m=p.bench.splice(bi,1)[0];p.discard.push(...m.energy);p.hand.push({id:m.id,kind:'mon',color:m.cardColor||0,species:m.species});p.retreated=true;p.st.returns++;return m}
+function doRecover(p,bi){const m=p.bench.splice(bi,1)[0];p.hand.push(...m.energy.map(c=>fresh('en',c)));p.removed.push({id:m.id,species:m.species});p.retreated=true;p.st.recovers++;if(monstersLeft(p)===0){finish(p===game.me?'ai':'me','refill');return true}return false}
+function promoteBench(p,bi){if(p.active||!p.bench[bi])return false;p.active=p.bench.splice(bi,1)[0];return true}
+// colour adjustment: A = pick among the colours already attached to the front; B = spend a hand energy card (discarded, not attached)
+function tuneBlock(p){if(p.tuned)return '今ターンは色調整済み';if(!p.active)return '前衛がいません';if(!p.active.energy.length)return '前衛にエネルギーがありません（無色には使えません）';return null}
+function tuneColoursA(p){return p.active?[...new Set(p.active.energy)]:[]}
+function tuneColoursB(p){const seen=new Set(),o=[];for(const c of p.hand)if(c.kind==='en'&&!seen.has(c.color)){seen.add(c.color);o.push(c)}return o}
+function doTune(p,card,mode,col,energyCard){take(p,card.id);if(mode==='B'&&energyCard)take(p,energyCard.id);p.tuned=true;p.tuneColor=col;p.st.tunes++;p.st[mode==='A'?'tuneA':'tuneB']++}
+function turnStart(p){p.attached=false;p.attachedBench=false;p.retreated=false;p.tuned=false;p.boosted=false;p.boostA=false;p.tuneColor=null;p.st.turns++}
+function turnEnd(p){p.tuneColor=null;p.boostA=false}
+function drawChoices(p){return [p.deckM.length?'M':null,p.deckG.length?'G':null].filter(Boolean)}
+function startDraws(p,choice){const out=[];if(choice&&drawFrom(p,choice))out.push({kind:'normal',deck:choice});for(let i=0;i<BAL.extraDraws;i++)if(drawFrom(p,'G'))out.push({kind:'extra',deck:'G'});return out}
+function bestBench(o){let bi=0,bt=-1;o.bench.forEach((m,i)=>{const t=energyTotal(m,o);if(t>bt){bt=t;bi=i}});return o.bench.splice(bi,1)[0]}
+const f1=n=>(Math.round(n*10)/10).toFixed(1);
+function sideText(p){const s=p.st;return `撃破${p.kos}／攻撃${s.attacks}回(撃破あたり${s.kos?f1(s.attacks/s.kos):'-'})／最大有効E${s.maxE}／平均付与${s.placed?f1(s.attached/s.placed):'-'}枚(出した${s.placed}体)／色調整${s.tunes}回(A${s.tuneA}・B${s.tuneB})／一撃撃破${s.oneShots}／控え行動：交代${s.swaps}・手札へ${s.returns}・回収${s.recovers}／増強A${s.boostA}・B${s.boostB}（控え撃破${s.benchKos}）`}
+function resultText(){const w=game.winner==='me'?'あなたの勝利':game.winner==='ai'?'相手の勝利':'引き分け',why={ko:'規定数撃破',refill:'補充不能',cap:'ターン上限'}[game.endReason]||game.endReason;
+ return `【${game.targetKos}体撃破・${BAL.name}】${w}（${why}）／${game.step+1}ターン目\nあなた：${sideText(game.me)}\n相手　：${sideText(game.ai)}`}
+function finish(win,reason){if(game.over)return;game.over=true;game.turn='end';game.winner=win;game.endReason=reason;RESULTS.unshift(resultText());RESULTS.length=Math.min(RESULTS.length,6)}
+// ----- attack + knockout + refill, as a list of events (shared by the screen and the headless simulation) -----
+function attackEvents(p,strong){const o=other(p);if(!cost(p,strong)||!o.active)return[];
+ const a=computeAttack(p,o,strong),def=o.active,lethal=def.damage+a.dmg>=maxHp(def),oneShot=lethal&&def.damage===0,sp=p.active.species;
+ p.boostA=false;p.st.attacks++;p.st.maxE=Math.max(p.st.maxE,a.pw.total);p.st.spAtk[sp]=(p.st.spAtk[sp]||0)+1;
+ const ev=[evt(zoneFor(p,'front'),`${who(p)}の${attackText(strong,a)}`,()=>{def.damage+=a.dmg})];
+ if(!lethal)return ev;
+ ev.push(evt('center',`${who(p)}が1体撃破！ ${p.kos+1}/${game.targetKos}（倒れたモンスターのエネルギーは失われた）`,()=>{o.active=null;p.kos++;p.st.kos++;p.st.spKo[sp]=(p.st.spKo[sp]||0)+1;o.st.spKoed[def.species]=(o.st.spKoed[def.species]||0)+1;if(oneShot)p.st.oneShots++}));
+ if(p.kos+1>=game.targetKos){ev.push(evt('center',`${who(p)}の勝利！ ${game.targetKos}体撃破`,()=>finish(p===game.me?'me':'ai','ko')));return ev}
+ return ev.concat(refillEvents(o,p))}
+// the knocked-out side refills its front: bench first, then a monster from hand, then the monster deck; nothing left = it loses
+function refillEvents(o,p){const z=zoneFor(o,'front');
+ if(o.bench.length)return auto(o)?[evt(z,`${who(o)}は控えから新しい前衛を選択。`,()=>{o.active=bestBench(o)})]:[evt('center','あなたの前衛が倒れた。控えから次を選択。',()=>{game.promotion='bench'})];
+ if(o.hand.some(c=>c.kind==='mon'))return auto(o)?[evt(z,`${who(o)}は手札のモンスターを前衛に出した。`,()=>{place(o,o.hand.find(c=>c.kind==='mon').id,true)})]:[evt('center','あなたの場が空になった。手札から次の前衛を選択。',()=>{game.promotion='hand'})];
+ if(o.deckM.length)return [evt(z,`${who(o)}はモンスター山札から前衛を補充した。`,()=>{const c=drawFrom(o,'M');place(o,c.id,true)})];
+ return [evt('center',`${who(o)}は場に出せるモンスターがいない（補充不能）。${who(p)}の勝利！`,()=>finish(p===game.me?'me':'ai','refill'))]}
+function capReached(){return game.step>=BAL.turnCap}
+function capEvents(){const a=game.me.kos,b=game.ai.kos,w=a>b?'me':a<b?'ai':'draw';return [evt('center',`ターン上限（${BAL.turnCap}ターン）。撃破数 あなた${a}／相手${b}：${w==='draw'?'引き分け':(w==='me'?'あなた':'相手')+'の勝利'}。`,()=>finish(w,'cap'))]}
+// ----- the opponent (also drives both sides in the headless balance simulation) -----
+function aiDrawChoice(p){const ch=drawChoices(p);if(ch.length<2)return ch[0]||null;const handM=p.hand.filter(c=>c.kind==='mon').length;return handM===0&&(!p.active||p.bench.length<BAL.benchMax)?'M':'G'}
+function aiAttachChoice(p,o){const ens=p.hand.filter(c=>c.kind==='en');if(!ens.length)return null;
+ const want=t=>{const b=activeColor(t,p);return b!==null?b:(o.active&&activeColor(o.active,o)!==null?(activeColor(o.active,o)+1)%6:null)};
+ const pick=t=>{const valid=ens.filter(c=>attachBlock(p,t,c.color)===null);return valid.length?(valid.find(c=>c.color===want(t))||valid[0]):null};
+ if(p.active&&!p.attached){const c=pick(p.active);if(c)return {card:c,target:p.active}}
+ const benches=[...p.bench].sort((x,y)=>energyTotal(x,p)-energyTotal(y,p));
+ for(const t of benches){const c=pick(t);if(c)return {card:c,target:t}}
+ return null}
+function bestAttackDmg(p,o){let best=0;if(!o.active||!p.active)return 0;for(const s of [false,true])if(cost(p,s))best=Math.max(best,computeAttack(p,o,s).dmg);return best}
+// 増強B（控え攻撃）：前衛を倒せないとき、控えを確実に倒せるなら使う（エネルギーを多く持つ控えを優先）
+function aiBenchStrike(p,o){const card=p.hand.find(c=>c.kind==='boost');if(!card||boostBlock(p,'B'))return null;
+ const pw=attackPower(p,false),dmg=pw.grown+pw.same;
+ if(o.active&&bestAttackDmg(p,o)+o.active.damage>=maxHp(o.active))return null;
+ let best=null,bv=-1;o.bench.forEach((t,i)=>{if(t.damage+dmg>=maxHp(t)){const v=t.energy.length*2+t.damage;if(v>bv){bv=v;best=i}}});return best}
+// 控え行動：瀕死でエネルギーの多い控えは回収、傷んだ控えは手札へ戻して仕切り直し、瀕死の前衛は元気な控えと交代
+const AI_BENCH={on:true,recoverHp:2,recoverEnergy:4,returnHp:2,swapHp:1,swapGain:3};  // 試作2のAI（仮）：控え行動を使う条件
+function aiBenchAction(p,o){if(!AI_BENCH.on||p.retreated)return null;const left=monstersLeft(p);
+ for(let i=0;i<p.bench.length;i++){const m=p.bench[i];if(!recoverBlock(p,m)&&m.energy.length>=AI_BENCH.recoverEnergy&&hpLeft(m)<=AI_BENCH.recoverHp&&left>=3)return {type:'recover',i,m}}
+ for(let i=0;i<p.bench.length;i++){const m=p.bench[i];if(!returnBlock(p,m)&&hpLeft(m)<=AI_BENCH.returnHp&&hpLeft(m)<maxHp(m)/2)return {type:'return',i,m}}
+ if(!swapBlock(p)&&hpLeft(p.active)<=AI_BENCH.swapHp){let bi=-1,bh=hpLeft(p.active)+AI_BENCH.swapGain-1;p.bench.forEach((m,i)=>{if(hpLeft(m)>bh){bh=hpLeft(m);bi=i}});if(bi>=0)return {type:'swap',i:bi,m:p.bench[bi]}}
+ return null}
+function aiBattleEvents(p,o){if(!canAttackNow(p))return[];
+ const card=p.hand.find(c=>c.kind==='boost'),plan=card?aiBenchStrike(p,o):null;
+ if(plan!==null){doBoostB(p,card);return benchAttackEvents(p,plan)}
+ if(!o.active)return[];const strong=cost(p,true),basic=cost(p,false);return strong||basic?attackEvents(p,strong):[]}
+function aiTuneChoice(p,o){if(tuneBlock(p)||!o.active)return null;const tune=p.hand.find(c=>c.kind==='tune');if(!tune)return null;
+ const cur=eff(p),d0=bestAttackDmg(p,o);let best=null;
+ const tryColour=(k,mode,card)=>{if(k===cur)return;const keep=p.tuneColor;p.tuneColor=k;const d=bestAttackDmg(p,o);p.tuneColor=keep;if(d>d0&&(!best||d>best.d||(d===best.d&&mode==='A'&&best.mode==='B')))best={k,mode,card,d,tune}};
+ for(const k of tuneColoursA(p))tryColour(k,'A',null);for(const e of tuneColoursB(p))tryColour(e.color,'B',e);
+ return best}
+function aiChoose(p,o){
+ const mons=p.hand.filter(c=>c.kind==='mon');
+ if(mons.length&&!p.active)return {zone:zoneFor(p,'front'),text:`${who(p)}が前衛にモンスターを配置。`,apply:()=>place(p,mons[0].id,true)};
+ if(mons.length&&p.active&&p.bench.length<BAL.benchMax)return {zone:zoneFor(p,'bench'),text:`${who(p)}が控えにモンスターを配置。`,apply:()=>place(p,mons[0].id,false)};
+ const at=aiAttachChoice(p,o);
+ if(at){const front=at.target===p.active;return {zone:zoneFor(p,front?'front':'bench'),text:`${who(p)}が${front?'前衛':'控え'}に${NAME[at.card.color]}エネルギーを付けた${attachSlot(p,at.target)==='extra'?'（控え追加付与）':''}。`,apply:()=>doAttach(p,at.target,at.card)}}
+ const ba=aiBenchAction(p,o);
+ if(ba){const nm=monsterName(ba.m);
+  if(ba.type==='recover')return {zone:zoneFor(p,'bench'),text:`${who(p)}が控えの${nm}を回収（エネルギー${ba.m.energy.length}枚が手札へ戻り、モンスターは消滅）。`,apply:()=>{doRecover(p,ba.i)}};
+  if(ba.type==='return')return {zone:zoneFor(p,'bench'),text:`${who(p)}が控えの${nm}を手札に戻した（エネルギーは全て捨て札）。`,apply:()=>doReturn(p,ba.i)};
+  return {zone:zoneFor(p,'front'),text:`${who(p)}が前衛を控えの${nm}と交代（エネルギー1枚を捨てた）。`,apply:()=>doSwap(p,ba.i,p.active.energy.length-1)}}
+ const boost=p.hand.find(c=>c.kind==='boost');
+ if(boost&&!boostBlock(p,'A')&&aiBenchStrike(p,o)===null)return {zone:zoneFor(p,'front'),text:`${who(p)}が増強Aを使用。この攻撃を強化（基本+2／強+1）。`,apply:()=>doBoostA(p,boost)};
+ const t=canAttackNow(p)?aiTuneChoice(p,o):null;
+ if(t)return {zone:zoneFor(p,'front'),text:`${who(p)}が色調整${t.mode}で前衛を一時的に${NAME[t.k]}属性へ変更。`,apply:()=>doTune(p,t.tune,t.mode,t.k,t.card)};
+ return null}
 function log(s){game.logs.unshift(s);game.logs.length=Math.min(game.logs.length,32)}
 function evt(zone,text,fn){return {zone:zone.startsWith('enemy-')?'enemy-front':zone,text,fn}}
 function showNext(){if(notice)return;if(!queue.length){let cb=onEmpty;onEmpty=null;if(cb)cb();else render();return}let x=queue.shift();if(x.fn)x.fn();log(x.text);notice={zone:x.zone,text:x.text};render()}
@@ -299,33 +493,57 @@ function pushEvents(events,after){queue.push(...events);if(after)onEmpty=after;i
 function acknowledge(){if(!notice)return;if(game.over){reset();return}notice=null;showNext()}
 function win(p,reason){game.over=true;game.turn='end';return evt('center',`${who(p)}の勝利！ ${reason}`)}
 // Apply knockout outcome only when each message is acknowledged; victory is set when the victory message appears.
-function resolveAttackSafe(p,strong){let target=p===game.me?game.ai:game.me;if(!cost(p,strong)||!target.active)return[];let att=eff(p),def=target.active,base=(strong?3:2)+p.bonus,weak=att!==null&&activeColor(def,target)!==null&&att===(activeColor(def,target)+1)%6,dmg=base*(weak?2:1);p.bonus=0;let events=[evt(p===game.me?'player-front':'enemy-front',`${who(p)}の${strong?'強攻撃':'基本攻撃'}：${base}${weak?' × 弱点2':''} = ${dmg}ダメージ`,()=>{def.damage+=dmg})];if(def.damage+dmg>=10){const willWin=p.kos+1>=game.targetKos||target.bench.length===0;events.push(evt('center',`${who(p)}が1体撃破！ ${p.kos+1}/${game.targetKos}`,()=>{target.active=null;p.kos++}));if(willWin)events.push(evt('center',`${who(p)}の勝利！ ${p.kos+1>=game.targetKos?game.targetKos+'体撃破':'相手の控えがいない'}`,()=>{game.over=true;game.turn='end'}));else if(target===game.ai)events.push(evt('enemy-front','相手は控えから新しい前衛を選択。',()=>{target.active=target.bench.shift()}));else events.push(evt('center','あなたの前衛が倒れた。控えから次を選択。',()=>{game.promotion=true}))}return events}
-function reset(){uid=0;game={me:player(),ai:player(),turn:'setup',step:0,targetKos:2,over:false,promotion:false,logs:[]};selected=null;fieldSelected=null;pendingAttack=null;mode=null;queue=[];notice=null;onEmpty=null;let am=mulligan(game.me),bm=mulligan(game.ai);let ids=game.ai.hand.filter(x=>x.kind==='mon').map(x=>x.id);place(game.ai,ids[0],true);ids.slice(1,3).forEach(id=>place(game.ai,id,false));log('新しい対戦。あなたが先攻。');if(am||bm)log(`引き直し：あなた${am}回、相手${bm}回`);render()}
-function begin(){if(!game.me.active||![2,3,4].includes(game.targetKos))return;game.turn='player';game.step=0;draw(game.me);sequence([evt('center','対戦開始！ あなたが先攻。最初のターンは攻撃できません。'),evt('player-bench','山札から1枚引きました。')])}
-function aiPlan(){let p=game.ai,steps=[];steps.push(evt('enemy-bench','相手のターン。山札から1枚引いた。',()=>{if(!draw(p)){game.over=true;game.turn='end';game.deckLoss=true}}));let aiMoves=()=>{if(game.over)return [evt('center','あなたの勝利！ 相手は山札からカードを引けませんでした。')];const rest=[];for(let c of [...p.hand.filter(x=>x.kind==='mon')])if(p.bench.length<2){let id=c.id;rest.push(evt('enemy-bench','相手が控えにモンスターを配置。',()=>place(p,id,false)));if(p.bench.length+rest.length>=2)break}
-let ens=p.hand.filter(x=>x.kind==='en');if(ens.length){let chosen=ens.find(c=>p.active&&canAttach(p.active,c.color,p)&&c.color===base(p.active))||ens.find(c=>p.active&&canAttach(p.active,c.color,p));if(chosen)rest.push(evt('enemy-front','相手が前衛にエネルギーを1枚付けた。',()=>{if(p.active&&canAttach(p.active,chosen.color,p)){take(p,chosen.id);p.active.energy.push(chosen.color)}}))}
-let boost=p.hand.find(x=>x.kind==='boost');if(boost)rest.push(evt('enemy-front','相手が増強カードを使用。次の攻撃+1。',()=>{take(p,boost.id);p.bonus=1}));let tune=p.hand.find(x=>x.kind==='tune');if(tune&&p.active?.energy.length&&game.me.active){let their=base(game.me.active);let desired=their===null?base(p.active):(their+1)%6;if(base(p.active)!==desired)rest.push(evt('enemy-front',`相手が色調整で前衛を一時的に${NAME[desired]}属性へ変更。`,()=>{take(p,tune.id);p.tuneColor=desired}))}
-rest.push(evt('enemy-front','相手は攻撃を準備している。'));return rest};
-sequence(steps,()=>{if(game.over){sequence([evt('center','あなたの勝利！ 相手の山札切れ。')]);return}const moves=aiMoves();sequence(moves,()=>{if(game.over){render();return}const strong=cost(p,true),basic=cost(p,false);const battle=strong||basic?resolveAttackSafe(p,strong):[evt('enemy-front','相手は攻撃できず、ターン終了。')];sequence(battle,()=>{p.tuneColor=null;p.bonus=0;if(game.over){render();return}if(game.promotion){game.afterPromotion=afterAi;render();return}afterAi()})})})}
-function afterAi(){if(game.over)return;game.turn='player';game.step++;let m=game.me;m.attached=false;m.retreated=false;m.tuned=false;m.boosted=false;m.bonus=0;m.tuneColor=null;selected=null;fieldSelected=null;pendingAttack=null;mode=null;if(!draw(m)){game.over=true;game.turn='end';sequence([evt('center','相手の勝利！ あなたは山札から引けませんでした。')]);return}sequence([evt('player-bench',`あなたのターン ${game.step+1}回目。山札から1枚引いた。`)])}
-function endPlayer(){if(game.over||game.promotion)return;game.me.tuneColor=null;game.me.bonus=0;selected=null;fieldSelected=null;pendingAttack=null;mode=null;game.turn='ai';render();aiPlan()}
-function actAttack(strong){if(game.step===0||!cost(game.me,strong))return;let events=resolveAttackSafe(game.me,strong);sequence(events,()=>{if(game.over)return;if(game.promotion){game.afterPromotion=endPlayer;render();return}endPlayer()})}
+function newGame(){const keep=game?game.targetKos:2;uid=0;game={me:player(),ai:player(),turn:'setup',step:0,targetKos:keep,over:false,promotion:false,drawPending:false,auto:{me:false,ai:true},logs:[]};selected=null;fieldSelected=null;pendingAttack=null;mode=null;queue=[];notice=null;onEmpty=null;dealOpening(game.me);dealOpening(game.ai);aiOpening(game.ai);log('新しい対戦（'+BAL.name+'）。あなたが先攻。')}
+function aiOpening(p){const ids=p.hand.filter(x=>x.kind==='mon').map(x=>x.id);if(ids[0]!==undefined)place(p,ids[0],true);if(ids[1]!==undefined)place(p,ids[1],false)}
+function reset(){newGame();render()}
+function begin(){if(!game.me.active||![2,3,4].includes(game.targetKos))return;game.turn='player';game.step=0;turnStart(game.me);sequence([evt('center','対戦開始！ あなたが先攻。最初のターンは攻撃できません。')],()=>{const ch=drawChoices(game.me);if(ch.length===1)playerDraw(ch[0]);else if(ch.length){game.drawPending=true;render()}else sequence([evt('player-bench','引ける山札がありません。')])})}
+// start of one of my turns: choose which deck gives the normal card (the extra card always comes from the growth deck)
+function handSummary(p){const h=p.hand,n=k=>h.filter(c=>c.kind===k).length,en=h.filter(c=>c.kind==='en').map(c=>NAME[c.color]).join('');return `手札：モンスター${n('mon')}／エネルギー${n('en')}${en?'（'+en+'）':''}／色調整${n('tune')}／増強${n('boost')}。場：前衛${p.active?'あり':'なし'}・控え${p.bench.length}体。`}
+function startPlayerTurn(){const m=game.me;turnStart(m);selected=null;fieldSelected=null;pendingAttack=null;mode=null;const ch=drawChoices(m);if(ch.length===1)playerDraw(ch[0]);else if(ch.length){game.drawPending=true;render()}else sequence([evt('player-bench',`あなたのターン ${game.step+1}回目。引ける山札がありません。`)])}
+function playerDraw(choice){const m=game.me;game.drawPending=false;const outs=startDraws(m,choice),ev=outs.map(o=>evt('player-bench',o.kind==='normal'?`あなたのターン ${game.step+1}回目。${deckName(o.deck)}から1枚引いた。`:'追加ドロー：育成山札から1枚引いた。'));if(!ev.length)ev.push(evt('player-bench',`あなたのターン ${game.step+1}回目。引ける山札がありません。`));sequence(ev)}
+function aiPlan(){const p=game.ai;turnStart(p);const ch=aiDrawChoice(p),extra=p.deckG.length-(ch==='G'?1:0)>0&&BAL.extraDraws>0;
+ const ev=[evt('enemy-bench',ch?`相手のターン。${deckName(ch)}から1枚引いた。`:'相手のターン。引ける山札がない。',()=>{startDraws(p,ch)})];if(extra)ev.push(evt('enemy-bench','相手は追加ドローで育成山札から1枚引いた。'));sequence(ev,aiLoop)}
+function aiLoop(){const p=game.ai,o=game.me,a=aiChoose(p,o);if(a)return sequence([evt(a.zone,a.text,a.apply)],aiLoop);
+ const b=aiBattleEvents(p,o),battle=b.length?b:[evt('enemy-front','相手は攻撃できず、ターン終了。')];
+ sequence(battle,()=>{turnEnd(p);if(game.over){render();return}if(game.promotion){game.afterPromotion=afterAi;render();return}afterAi()})}
+function afterAi(){if(game.over)return;game.turn='player';game.step++;if(capReached()){sequence(capEvents());return}startPlayerTurn()}
+function endPlayer(){if(game.over||game.promotion)return;game.me.tuneColor=null;game.me.boostA=false;selected=null;fieldSelected=null;pendingAttack=null;mode=null;game.turn='ai';render();aiPlan()}
+function actAttack(strong){if(!canAttackNow(game.me)||!cost(game.me,strong))return;let events=attackEvents(game.me,strong);sequence(events,()=>{if(game.over)return;if(game.promotion){game.afterPromotion=endPlayer;render();return}endPlayer()})}
 function doMessage(zone,text,action){if(action)action();sequence([evt(zone,text)])}
 function button(t,fn,disabled=false,primary=false){let b=document.createElement('button');b.type='button';b.textContent=t;b.disabled=disabled;if(primary)b.classList.add('primary');b.addEventListener('click',fn);return b}
 function add(t,fn,disabled=false,primary=false){$('actions').append(button(t,fn,disabled||!!notice,primary))}
 function cardName(c){return c.kind==='mon'?'モンスター':c.kind==='en'?'エネルギー':c.kind==='tune'?'色調整':'増強'}
-function monView(m,p,front,side){if(!m)return `<div class="empty-slot ${front?'front':''}">${front?'前衛なし':'空き'}</div>`;let c=activeColor(m,p),total=energyTotal(m,p);return `<div class="bcard ${front?'front':''}" aria-label="${esc((side==='enemy'?'相手':'あなた')+(front?'前衛':'控え')+' '+monsterName(m)+' '+colorName(c)+' HP'+(10-m.damage)+'/10 エネルギー実'+m.energy.length+'枚、有効'+total+'枚分')}"><div class="kind">${front?'★ 前衛':'控え'}・${colorName(c)}</div><div class="monster-art-panel" style="background:${artBg(c)}"><img src="${artSrc(m,c)}" alt="${esc(monsterName(m))}"><span class="monster-badge">${colorName(c)}</span></div><span class="monster-name">${esc(monsterName(m))}</span><div class="hp">HP ${Math.max(0,10-m.damage)}/10</div><div class="energy" title="${esc(m.energy.map(n=>NAME[n]).join('・'))}">E ${m.energy.length}枚→${total}分 ${m.energy.length?m.energy.map(n=>NAME[n][0]).join(''):''}</div></div>`}
+function monView(m,p,front,side){if(!m)return `<div class="empty-slot ${front?'front':''}">${front?'前衛なし':'空き'}</div>`;let c=activeColor(m,p),total=energyTotal(m,p);return `<div class="bcard ${front?'front':''}" aria-label="${esc((side==='enemy'?'相手':'あなた')+(front?'前衛':'控え')+' '+monsterName(m)+' '+colorName(c)+' HP'+hpLeft(m)+'/'+maxHp(m)+' エネルギー実'+m.energy.length+'枚、有効'+total+'枚分')}"><div class="monster-art-panel" style="background:${artBg(c)}"><img src="${artSrc(m,c)}" alt="${esc(monsterName(m))}"><span class="monster-badge">${colorName(c)}</span></div><span class="monster-name">${esc(monsterName(m))}</span><div class="hp">HP ${hpLeft(m)}/${maxHp(m)}</div><div class="energy" title="${esc(m.energy.map(n=>NAME[n]).join('・'))}">E ${m.energy.length}枚→${total}分 ${m.energy.length?m.energy.map(n=>NAME[n][0]).join(''):''}</div></div>`}
 function slots(p,side){return [p.bench[0]||null,p.active,p.bench[1]||null].map((m,i)=>{const allowed=side==='player'&&!notice&&!game.over&&game.turn!=='ai'&&!game.promotion;const id=side+':'+i;return `<div class="slot" data-slot="${id}" role="${allowed?'button':'group'}" tabindex="${allowed?'0':'-1'}" aria-label="${side==='enemy'?'相手':'あなた'}の${i===1?'前衛':'控え'} ${m?colorName(activeColor(m,p)):'空き'}"><div class="${allowed?'selectable':''} ${fieldSelected===id?'picked':''}">${monView(m,p,i===1,side)}</div></div>`}).join('')}
-function handView(c){let info=c.kind==='mon'?'HP10／無色':c.kind==='en'?'付与1枚':c.kind==='tune'?'前衛の色変更':'攻撃 +1';if(c.kind==='mon')return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="monster-art-panel" style="background:${artBg(null)}"><img src="${artSrc(c,null)}" alt="${esc(monsterName(c))}"><span class="monster-badge">無色</span></div><strong class="monster-name">${esc(monsterName(c))}</strong><span class="small">${info}</span></div>`;return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="swatch" style="background:${c.kind==='boost'?'#8595a6':COLOR[c.color]}">${c.kind==='boost'?'+1':NAME[c.color]}</div><strong>${c.kind==='boost'?'増強':NAME[c.color]}</strong><span class="small">${info}</span></div>`}
+const isAux=c=>c.kind==='tune'||c.kind==='boost';
+const ENERGY_ART=['red','orange','yellow','green','blue','purple'];
+const cardKey=c=>c.kind==='en'?`paremon_cards/energy_${ENERGY_ART[c.color]}.png`:c.kind==='boost'?'paremon_cards/boost.png':`paremon_cards/tune_${(c.color/2)%2===1?'b':'a'}.png`;const cardSrc=c=>cardKey(c);
+const tintHex=(h,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)*(1-k)+255*k).toString(16).padStart(2,'0')).join('');
+const cardImg=c=>`<img class="card-art" alt="" draggable="false" src="${cardSrc(c)}">`;
+const auxMark=c=>c.kind==='boost'?'+1':'調',auxName=c=>c.kind==='boost'?'増強':'色調整';
+function handView(c){let info=c.kind==='mon'?`HP${maxHp(c)}／${spec(c).role}`:c.kind==='en'?'付与1枚':c.kind==='tune'?'前衛の色変更':'攻撃強化A/B';if(c.kind==='mon')return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="monster-art-panel" style="background:${artBg(null)}"><img src="${artSrc(c,null)}" alt="${esc(monsterName(c))}"><span class="monster-badge">無色</span></div><strong class="monster-name">${esc(monsterName(c))}</strong><span class="small">${info}</span></div>`;if(isAux(c))return `<div class="hand-card aux ${selected===c.id?'sel':''}"><small>補助</small><div class="swatch aux-mark art" style="background:#8595a6">${cardImg(c)}<span class="art-label">${auxMark(c)}</span></div><strong>${auxName(c)}</strong><span class="small">${info}</span></div>`;
+ return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="swatch art" style="background:${tintHex(COLOR[c.color],.82)}">${cardImg(c)}<span class="art-label">${NAME[c.color]}</span></div><strong>${NAME[c.color]}</strong><span class="small">${info}</span></div>`}
 function actionLabel(t){let div=document.createElement('div');div.className='action-caption';div.textContent=t;$('actions').append(div)}
 function disabledHint(buttonEl,reason){if(buttonEl.disabled){buttonEl.title=reason;buttonEl.setAttribute('aria-label',buttonEl.textContent+'（使用不可：'+reason+'）')}}
 function action(t,fn,disabled=false,primary=false,reason='現在は使用できません'){let b=button(t,fn,disabled,primary);disabledHint(b,reason);$('actions').append(b);return b}
+// Header controls (logo = rules, 勝利条件, 対戦開始): the victory target can only be chosen, and the match only started, during setup.
+function syncHeader(){
+ const setup=game.turn==='setup',sel=$('victoryTarget'),st=$('startBtn');
+ sel.value=String(game.targetKos);sel.disabled=!setup||!!notice;
+ st.disabled=!(setup&&game.me.active&&!notice&&!$('overlay').classList.contains('show'));
+}
+function openRules(){
+ if($('overlay').classList.contains('show'))return;
+ $('detailContent').innerHTML=[...document.querySelectorAll('.panel.rules details p')].map(p=>`<p>${p.innerHTML}</p>`).join('');
+ modal('ルールと仮設定・詳細','',[['閉じる',()=>{},false]],false);$('modalTitle').textContent='ルールと仮設定';
+}
 function render(){
- const m=game.me,a=game.ai;
+ const m=game.me,a=game.ai;syncHeader();
  $('enemySlots').innerHTML=slots(a,'enemy');$('playerSlots').innerHTML=slots(m,'player');
  $('opScore').textContent=`撃破 ${a.kos}/${game.targetKos}`;$('myScore').textContent=`撃破 ${m.kos}/${game.targetKos}`;
- $('opDeck').textContent=`山札${a.deck.length}／手札${a.hand.length}`;
- $('myDeck').textContent=`山札${m.deck.length}／手札${m.hand.length}`;
+ $('opDeck').textContent=`山札 モ${a.deckM.length}・育${a.deckG.length}／手札${a.hand.length}`;
+ $('myDeck').textContent=`山札 モ${m.deckM.length}・育${m.deckG.length}／手札${m.hand.length}`;
+ $('resultPanel').hidden=!RESULTS.length;$('resultText').textContent=RESULTS.join('\n\n');
  $('handCount').textContent=`${m.hand.length}枚`;$('hand').replaceChildren();
  for(let c of m.hand){let b=button('',()=>{
   if(performance.now()<suppressCardClickUntil)return;
@@ -333,7 +551,7 @@ function render(){
   selected=c.id;fieldSelected=null;pendingAttack=null;mode=null;render();
   openHandMenu(c);
  },!!notice||game.over||game.promotion||game.turn==='ai');
-  b.innerHTML=handView(c);b.setAttribute('aria-label',`${c.kind==='mon'?monsterName(c):cardName(c)} ${c.kind==='boost'?'攻撃力プラス1':c.kind==='mon'?'モンスター':NAME[c.color]} ${selected===c.id?'選択中':''}`);
+  b.innerHTML=handView(c);b.setAttribute('aria-label',`${c.kind==='mon'?monsterName(c):cardName(c)} ${c.kind==='boost'?'攻撃力プラス1':c.kind==='tune'?'前衛の色を一時変更（カード自体に色はありません）':c.kind==='mon'?'モンスター':NAME[c.color]} ${selected===c.id?'選択中':''}`);
   b.setAttribute('aria-pressed',String(selected===c.id));b.dataset.dragHand=String(c.id);b.draggable=false;$('hand').append(b)
  }
  $('log').innerHTML=game.logs.map(x=>`<div>${esc(x)}</div>`).join('');
@@ -342,57 +560,76 @@ function render(){
    const finished=game.over;$('messageTap').textContent=finished?'次の対戦に進む ▶':'タップして進む ▶';
    n.setAttribute('aria-label',finished?'次の対戦に進む':'メッセージを確認して次に進む');n.classList.toggle('done',finished)
  }else{n.classList.remove('show');n.classList.remove('done')}
- $('turnControl').replaceChildren();let card=m.hand.find(c=>c.id===selected);
- $('handHint').textContent='タップで操作メニュー／長押しせずドラッグして配置・付与できます。';
+ $('handHint').textContent='タップで操作メニュー／ドラッグして配置・付与。付与は通常枠1枚＋控え専用の追加枠1枚。ターン終了は自分の前衛をタップ。';
  if(notice){$('status').textContent='フィールドのメッセージをタップして次に進みます。';return}
  if(game.over){$('status').textContent='対戦終了。メッセージをタップして再戦します。';return}
  if(game.promotion){
-   $('status').textContent='控えから新しい前衛を選びます。';
+   $('status').textContent=game.promotion==='hand'?'手札のモンスターから新しい前衛を選びます。':'控えから新しい前衛を選びます。';
    if(!$('overlay').classList.contains('show')){
-     modal('新しい前衛を選ぶ','',m.bench.map((c,i)=>[`${colorName(base(c))}（HP${10-c.damage}）`,()=>{
-       m.active=m.bench.splice(i,1)[0];game.promotion=false;let done=game.afterPromotion;game.afterPromotion=null;
-       sequence([evt('player-front','あなたは控えを新しい前衛に出した。')],done)
+     const fromHand=game.promotion==='hand',src=fromHand?m.hand.filter(c=>c.kind==='mon'):m.bench;
+     modal(fromHand?'新しい前衛を選ぶ（手札から）':'新しい前衛を選ぶ','',src.map((c,i)=>[fromHand?`${monsterName(c)}（手札）`:`${monsterName(c)}・${colorName(base(c))}（HP${hpLeft(c)}/${maxHp(c)}）`,()=>{
+       if(fromHand)place(m,c.id,true);else m.active=m.bench.splice(i,1)[0];game.promotion=false;let done=game.afterPromotion;game.afterPromotion=null;
+       sequence([evt('player-front','あなたは新しい前衛を出した。')],done)
      },false]),false);
+   }
+   return;
+ }
+ if(game.drawPending){
+   $('status').textContent='引く山札を選びます。';
+   if(!$('overlay').classList.contains('show')){
+     modal(`${game.step===0?'最初のターン':`ターン ${game.step+1}回目`}：山札を選んで1枚引く`,`${handSummary(m)} 追加で育成山札からも1枚引きます。`,[
+       [`モンスター山札（残り${m.deckM.length}）`,()=>playerDraw('M'),!m.deckM.length],
+       [`育成山札（残り${m.deckG.length}）`,()=>playerDraw('G'),!m.deckG.length]],false);
    }
    return;
  }
  if(game.turn==='ai'){$('status').textContent='相手のターン。メッセージを順に進めてください。';return}
  if(game.turn==='setup'){
    $('status').textContent='手札のモンスターを選んで配置し、対戦開始を押してください。';
-   const setting=document.createElement('div');setting.className='victory-setting';
-   const label=document.createElement('label');label.htmlFor='victoryTarget';label.textContent='勝利条件';
-   const select=document.createElement('select');select.id='victoryTarget';select.setAttribute('aria-label','必要な撃破数');
-   for(const count of [2,3,4]){
-     const opt=document.createElement('option');opt.value=String(count);opt.textContent=count+'体撃破';
-     select.append(opt);
-   }
-   select.value=String(game.targetKos);
-   select.addEventListener('change',()=>{game.targetKos=Number(select.value);render()});
-   setting.append(label,select);$('turnControl').append(setting);
-   let b=button('対戦開始',begin,!m.active,true);$('turnControl').append(b);return;
+   return;
  }
- $('status').textContent=`あなたのターン ${game.step+1}回目。手札か場のカードをタップしてください。`;
- $('turnControl').append(button('攻撃せずターン終了',()=>modal('ターンを終了','攻撃せず相手に手番を渡しますか？',[
-   ['ターン終了',()=>sequence([evt('center','あなたはターンを終了した。')],endPlayer),false]
- ]),false));
+ $('status').textContent=`あなたのターン ${game.step+1}回目。手札か場のカードをタップしてください。ターン終了は前衛のメニューから。`;
 }
+// ターン終了は自分の前衛メニューから（確認つき）。終了できない場面は理由つきで無効にする。
+function endTurnBlock(){if(game.over)return '対戦は終了しています';if(game.turn==='setup')return '対戦開始前はターンを終了できません';if(game.turn!=='player')return '今は相手の手番です';if(game.promotion)return '新しい前衛を選ぶ必要があります';if(game.drawPending)return '先に引く山札を選んでください';if(notice)return 'メッセージを確認してください';return null}
+function confirmEndTurn(){if(endTurnBlock())return;modal('ターンを終了','攻撃せず、このターンを終了して相手に手番を渡します（このターンの未使用の付与・控え行動は失われます）。',[
+  ['ターン終了',()=>{if(endTurnBlock())return;sequence([evt('center','あなたはターンを終了した。')],endPlayer)},false],['戻る',()=>render(),false]],false)}
+function endTurnChoice(){const why=endTurnBlock(),b=['ターン終了（攻撃しない）',()=>confirmEndTurn(),!!why];return b}
 function openFieldMenu(pos){
  const p=game.me, monster=pos===1?p.active:p.bench[pos===0?0:1];
- if(!monster){modal('空きスロット','手札のモンスターを選んで配置してください。',[],true);return}
- const choices=[['詳細',()=>showDetails(monster,'field',pos===1),false]];
+ if(!monster){const ch=[];let txt='手札のモンスターを選んで配置してください。';if(pos===1){ch.push(endTurnChoice());const prom=p.bench.map((m,i)=>[`控え${i===0?'①':'②'}（${monsterName(m)}）を前衛に出す（無料）`,()=>{promoteBench(p,i);fieldSelected=null;doMessage('player-front',`あなたが控えの${monsterName(m)}を前衛に出した。`)},game.turn!=='player']);ch.push(...prom);if(endTurnBlock())txt+=' '+endTurnBlock()+'。'}modal('空きスロット',txt,ch,true);return}
+ const choices=[['詳細',()=>showDetails(monster,'field',pos===1),false]];let why='';
  if(game.turn==='player'&&pos===1){
-   choices.push(['ワザ①：攻撃2',()=>selectAttack(false),game.step===0||!cost(p,false)]);
-   choices.push(['ワザ②：攻撃3',()=>selectAttack(true),game.step===0||!cost(p,true)]);
-   choices.push(['前衛と控えの交代',()=>retreat(),p.retreated||!p.active?.energy.length||!p.bench.length]);
+   const w1=attackPower(p,false),w2=attackPower(p,true),first=game.step===0;
+   const no1=first||!cost(p,false),no2=first||!cost(p,true),sp=spec(p.active);
+   choices.push([`ワザ①：攻撃${w1.sum}`,()=>selectAttack(false),no1]);
+   choices.push([`ワザ②：攻撃${w2.sum}`,()=>selectAttack(true),no2]);
+   const sw=swapBlock(p);choices.push(['前衛と控えの交代（エネルギー1枚を捨てる）',()=>retreat(),!!sw]);
+   choices.push(endTurnChoice());
+   if(first)why='先攻の最初のターンは攻撃できません。';
+   else if(no1)why=`ワザ①は有効エネルギー${sp.needB}以上、ワザ②は${Math.max(2,sp.needS)}以上（現在色のカード1枚を含む）が必要です。`;
+   else if(no2)why=`ワザ②は有効エネルギー${Math.max(2,sp.needS)}以上（現在色のカード1枚を含む）が必要です。`;
+   if(sw)why+=(why?' ':'')+'交代：'+sw+'。';
  }else if(game.turn==='player'){
-   choices.push(['前衛と交代',()=>retreat(pos===0?0:1),p.retreated||!p.active?.energy.length]);
+   const bi=pos===0?0:1,sw=swapBlock(p),rt=returnBlock(p,monster),rc=recoverBlock(p,monster);
+   choices.push(['前衛と交代（前衛のエネルギー1枚を捨てる）',()=>retreat(bi),!!sw]);
+   choices.push([`手札へ戻す（このモンスターのエネルギー1枚＋全付与を捨て、HP満タンの新カードに）`,()=>returnToHand(bi),!!rt]);
+   choices.push([`エネルギー全回収（${monster.energy.length}枚が手札へ。モンスターは消滅）`,()=>recoverEnergy(bi),!!rc]);
+   why='控え行動（交代・手札へ戻す・全回収）は合計1ターン1回。付与済みエネルギー1枚以上が必要。'+(sw&&rt&&rc&&p.retreated?' '+BENCH_ACT_USED:'');
  }
  choices.push(['戻る',()=>{fieldSelected=null;render()},false]);
- modal(pos===1?'前衛の操作':`控え${pos===0?'①':'②'}の操作`,'',choices,false);
+ modal(pos===1?'前衛の操作':`控え${pos===0?'①':'②'}の操作`,why,choices,false);
 }
+function returnToHand(bi){const p=game.me,m=p.bench[bi];if(!m||returnBlock(p,m))return;
+ modal('手札へ戻す・最終確認',`控えの${monsterName(m)}を手札に戻します。付いているエネルギー${m.energy.length}枚は全て捨て札（うち1枚が代価）、HPは満タンの新しいカードになります。控え行動を1回使います。`,[['手札へ戻す',()=>{
+  const q=game.me,t=q.bench[bi];if(t!==m||returnBlock(q,t))return;doReturn(q,bi);fieldSelected=null;selected=null;doMessage('player-bench',`あなたが控えの${monsterName(m)}を手札に戻した（エネルギーは全て捨て札）。`)},false],['戻る',()=>render(),false]],false)}
+function recoverEnergy(bi){const p=game.me,m=p.bench[bi];if(!m||recoverBlock(p,m))return;const last=monstersLeft(p)-1===0;
+ modal('エネルギー全回収・最終確認',`控えの${monsterName(m)}のエネルギー${m.energy.length}枚を全て手札に戻します。代わりにこのモンスターはこの対戦から消滅します（相手の撃破には数えません）。控え行動を1回使います。`+(last?' ※これが最後のモンスターなので、あなたの負け（補充不能）になります。':''),[['全回収する',()=>{
+  const q=game.me,t=q.bench[bi];if(t!==m||recoverBlock(q,t))return;const n=t.energy.length,lost=doRecover(q,bi);fieldSelected=null;selected=null;
+  doMessage('player-bench',`あなたが控えの${monsterName(m)}からエネルギー${n}枚を回収（モンスターは消滅）。`+(lost?'あなたのモンスターがいなくなった（補充不能）。相手の勝利！':''))},false],['戻る',()=>render(),false]],false)}
 function openHandMenu(card){
  if(selected!==card.id)return;
- modal(cardName(card), '', [
+ modal(cardName(card), canUseHand(card)?'':handBlockedReason(card), [
   ['使う',()=>{ if(canUseHand(card)) useHand(card) }, !canUseHand(card)],
   ['詳細',()=>showDetails(card,'hand'), false],
   ['戻る',()=>{ selected=null; render(); }, false]
@@ -400,52 +637,60 @@ function openHandMenu(card){
 }
 
 function handBlockedReason(card){let m=game.me;
- if(card.kind==='mon')return m.bench.length>=2&&!!m.active?'控えが埋まっています':'前衛または控えに空きが必要です';
- if(card.kind==='en')return m.attached?'今ターンはエネルギーを付与済み':'付与するモンスターがいません';
- if(card.kind==='boost')return m.boosted?'今ターンは増強済み':'前衛がいません';
- if(card.kind==='tune')return m.tuned?'今ターンは色調整済み':'前衛にエネルギーがありません';return '使用できません'
+ if(card.kind==='mon')return m.bench.length>=BAL.benchMax&&!!m.active?'控えが埋まっています':'前衛または控えに空きが必要です';
+ if(card.kind==='en'){if(!m.active&&!m.bench.length)return '付与するモンスターがいません';if(m.attached&&m.attachedBench)return '今ターンの付与枠（通常・控え追加）は使用済みです';const why=[m.active,...m.bench].filter(Boolean).map(t=>attachBlock(m,t,card.color)).filter(Boolean);return why[0]||'付与できません'}
+ if(card.kind==='boost')return boostBlock(m,'A')&&boostBlock(m,'B')?boostBlock(m,'A')+(boostBlock(m,'A')===boostBlock(m,'B')?'':'／B：'+boostBlock(m,'B')):'使用できません';
+ if(card.kind==='tune')return tuneBlock(m)||'使用できません';return '使用できません'
 }
 function canUseHand(card){let m=game.me;
- if(card.kind==='mon')return !m.active||m.bench.length<2;
+ if(card.kind==='mon')return !m.active||m.bench.length<BAL.benchMax;
  if(game.turn!=='player')return false;
- if(card.kind==='en')return !m.attached&&[m.active,...m.bench].some(x=>canAttach(x,card.color,m));
- if(card.kind==='boost')return !m.boosted&&!!m.active;
- if(card.kind==='tune')return !m.tuned&&!!m.active?.energy.length;
+ if(card.kind==='en')return [m.active,...m.bench].some(x=>attachBlock(m,x,card.color)===null);
+ if(card.kind==='boost')return !boostBlock(m,'A')||!boostBlock(m,'B');
+ if(card.kind==='tune')return tuneBlock(m)===null;
  return false;
 }
-function useHand(card){if(!game.me.hand.some(c=>c.id===card.id)||!canUseHand(card))return;
- if(card.kind==='boost'){
-  take(game.me,card.id);game.me.boosted=true;game.me.bonus=1;selected=null;fieldSelected=null;
-  doMessage('player-front','あなたが増強カードを使用。次の攻撃+1。');return;
- }
- if(card.kind==='tune'){colorPopup(n=>{
-  if(!game.me.hand.some(c=>c.id===card.id)||!game.me.active?.energy.length)return;
-  take(game.me,card.id);game.me.tuned=true;game.me.tuneColor=n;selected=null;fieldSelected=null;
-  doMessage('player-front',`前衛の属性を一時的に${NAME[n]}へ変更。`)
- });return}
- let p=game.me;
- let available=[
-   {label:'前衛',monster:p.active,free:!p.active},
-   {label:'控え①',monster:p.bench[0],free:!p.bench[0]},
-   {label:'控え②',monster:p.bench[1],free:!p.bench[1]}
- ];
+function useHand(card){const p=game.me;if(!p.hand.some(c=>c.id===card.id)||!canUseHand(card))return;
+ if(card.kind==='boost'){openBoostMenu(card);return}
+ if(card.kind==='tune'){openTuneMenu(card);return}
+ const available=[{label:'前衛',monster:p.active,free:!p.active},{label:'控え①',monster:p.bench[0],free:!p.bench[0]},{label:'控え②',monster:p.bench[1],free:!p.bench[1]}];
  const choices=available.map((item,i)=>{
-  const valid=card.kind==='mon'?item.free&&(i===0||!!p.active&&p.bench.length===i-1):canAttach(item.monster,card.color,p);
-  return [item.label+(item.monster?'・'+colorName(base(item.monster)):item.free?'・空き':''),()=>{
+  const target=i===0?p.active:p.bench[i-1],why=card.kind==='mon'?null:attachBlock(p,target,card.color);
+  const valid=card.kind==='mon'?item.free&&(i===0||!!p.active&&p.bench.length===i-1):!why;
+  const tag=card.kind==='mon'?(item.monster?'・'+colorName(base(item.monster)):item.free?'・空き':''):(item.monster?'・'+colorName(base(item.monster)):'')+(why?`（${why}）`:`（${attachSlot(p,target)==='extra'?'控え追加枠':'通常枠'}）`);
+  return [item.label+tag,()=>{
    if(!valid)return;
-   if(card.kind==='mon'){
-     let ok=place(p,card.id,i===0);if(ok){selected=null;fieldSelected=null;doMessage(i===0?'player-front':'player-bench',`あなたが${item.label}にモンスターを配置。`)}
-   }else{
-     let target=i===0?p.active:p.bench[i-1];if(!target||p.attached||!canAttach(target,card.color,p))return;
-     take(p,card.id);target.energy.push(card.color);p.attached=true;selected=null;fieldSelected=null;
-     doMessage(i===0?'player-front':'player-bench',`あなたが${item.label}に${NAME[card.color]}エネルギーを1枚付与。`)
-   }
+   if(card.kind==='mon'){const ok=place(p,card.id,i===0);if(ok){selected=null;fieldSelected=null;doMessage(i===0?'player-front':'player-bench',`あなたが${item.label}にモンスターを配置。`)}}
+   else{if(attachBlock(p,target,card.color))return;const slot=doAttach(p,target,card);selected=null;fieldSelected=null;doMessage(i===0?'player-front':'player-bench',`あなたが${item.label}に${NAME[card.color]}エネルギーを付与${slot==='extra'?'（控え追加枠）':''}。`)}
   },!valid]
  });
- modal('使用する対象',card.kind==='mon'?'モンスターを配置する場所を選んでください。':'エネルギーを付ける対象を選んでください。',choices);
+ modal('使用する対象',card.kind==='mon'?'モンスターを配置する場所を選んでください。':'エネルギーを付ける対象を選んでください（通常枠1枚＋控え専用の追加枠1枚）。',choices);
 }
+// 増強：A（今回の攻撃を強化）かB（相手の控えへ基本攻撃）。カードは確定の瞬間にだけ消費する。
+function openBoostMenu(card){const p=game.me,a=boostBlock(p,'A'),b=boostBlock(p,'B');
+ modal('増強：効果を選ぶ',(a?'A不可：'+a+'。':'')+(b?'B不可：'+b+'。':'')+'1ターン最大1枚。',[
+  ['A：今回の攻撃を強化（基本+2／強+1。弱点2倍の前に加算）',()=>{if(boostBlock(p,'A')||!p.hand.some(c=>c.id===card.id))return;doBoostA(p,card);selected=null;fieldSelected=null;doMessage('player-front','あなたが増強Aを使用。このターンの攻撃：基本+2／強+1。')},!!a],
+  ['B：相手の控え1体へ基本攻撃（弱点なし・増強値なし。攻撃1回を使う）',()=>boostTarget(card),!!b]],true)}
+function boostTarget(card){const p=game.me,o=game.ai,pw=attackPower(p,false),dmg=pw.grown+pw.same;
+ modal('増強B：攻撃する控えを選ぶ',`基本攻撃 ${dmg}ダメージ（弱点・増強値なし）。攻撃するとターンが終了します。`,o.bench.map((t,i)=>[`控え${i===0?'①':'②'}・${monsterName(t)}（HP${hpLeft(t)}/${maxHp(t)}）${t.damage+dmg>=maxHp(t)?'→撃破':''}`,()=>{
+  modal('増強Bの最終確認',`相手の控え${monsterName(t)}へ基本攻撃（${dmg}ダメージ）を行い、ターンを終了します。増強カードを1枚消費します。`,[['攻撃する',()=>{
+   if(boostBlock(p,'B')||!p.hand.some(c=>c.id===card.id)||o.bench[i]!==t)return;
+   doBoostB(p,card);selected=null;fieldSelected=null;
+   sequence(benchAttackEvents(p,i),()=>{if(game.over)return;endPlayer()})},false],['戻る',()=>render(),false]],false)
+ },false]),true)}
+// colour adjustment: method A (colours already on the front) or B (spend one hand energy card)
+function openTuneMenu(card){const p=game.me,why=tuneBlock(p);if(why){modal('色調整',why,[],true);return}
+ const a=tuneColoursA(p),b=tuneColoursB(p);
+ modal('色調整：方式を選ぶ','一時的な色変更はターン終了で元に戻ります。'+(b.length?'':'（B：手札にエネルギーがありません）'),[
+  ['A：付いているエネルギーの色から選ぶ',()=>tuneA(card),!a.length],
+  ['B：手札のエネルギー1枚を使って変更',()=>tuneB(card),!b.length]],true)}
+function applyTune(card,mode,col,energyCard){const p=game.me;if(!p.hand.some(c=>c.id===card.id)||tuneBlock(p))return;if(mode==='B'&&(!energyCard||!p.hand.some(c=>c.id===energyCard.id)))return;
+ doTune(p,card,mode,col,energyCard);selected=null;fieldSelected=null;doMessage('player-front',`前衛の属性を一時的に${NAME[col]}へ変更（方式${mode}）。`)}
+function tuneA(card){const p=game.me,cur=eff(p);modal('色調整A：変更先の色','すでに付いている色から選びます（色調整カード1枚を消費）。',tuneColoursA(p).map(c=>[`${NAME[c]}${c===cur?'（今の色：変化なし）':''}`,()=>applyTune(card,'A',c,null),false]))}
+function tuneB(card){const p=game.me,cur=eff(p);modal('色調整B：使うエネルギー','このエネルギーは付与されず捨て札になります（付与枠は使いません）。',tuneColoursB(p).map(e=>[`${NAME[e.color]}エネルギー${e.color===cur?'（今の色：変化なし）':''}`,()=>applyTune(card,'B',e.color,e),false]))}
 function selectAttack(strong){if(game.turn!=='player'||game.step===0||!cost(game.me,strong))return;
- modal('攻撃の最終確認',`ワザ${strong?'②・強攻撃（攻撃3）':'①・基本攻撃（攻撃2）'}を使います。攻撃するとターンが終了します。`,[
+ const a=computeAttack(game.me,game.ai,strong);
+ modal('攻撃の最終確認',`ワザ${strong?'②・強攻撃':'①・基本攻撃'}（攻撃${a.pw.sum}${a.weak?'、弱点で×2＝'+a.dmg:''}）を使います。攻撃するとターンが終了します。`,[
   ['攻撃する',()=>{fieldSelected=null;pendingAttack=null;actAttack(strong)},false],
   ['戻る',()=>{render()},false]
  ],false);
@@ -455,15 +700,18 @@ function showDetails(item,kind,front=false,owner=game.me){
  const isMon=kind==='field'||item.kind==='mon';
  const color=kind==='field'?activeColor(item,owner):item.kind==='mon'?null:item.color;
  let rows=[];
- if(isMon){rows=[`種族：${monsterName(item)}`,`HP：${kind==='field'?10-item.damage:10}/10`,`属性：${colorName(color)}`,
-   `ワザ① 基本攻撃：2ダメージ／必要：◇1`,
-   `ワザ② 強攻撃：3ダメージ／必要：自色1＋◇1`,
-   `弱点攻撃ではダメージ×2（6色の相性順）`];
+ if(isMon){const gen=kind!=='field';
+   const w1=gen?null:attackPower(owner,false,item),w2=gen?null:attackPower(owner,true,item);
+   const pt=w=>`${w.sum}（成長${w.grown}${w.same?`＋同色${w.same}`:''}${w.boost?`＋増強${w.boost}`:''}）`;
+   rows=[`種族：${monsterName(item)}`,`HP：${kind==='field'?hpLeft(item):maxHp(item)}/${maxHp(item)}`,`役割：${spec(item).role}（基本攻撃の補正${spec(item).bOff>=0?'+':''}${spec(item).bOff}／強攻撃の補正${spec(item).sOff>=0?'+':''}${spec(item).sOff}／必要エネルギー 基本${spec(item).needB}・強${spec(item).needS}／山札${spec(item).count}枚）`,`属性：${colorName(color)}`,
+   gen?`ワザ① 基本攻撃：${BAL.basic.base}から成長（有効エネルギー${BAL.basic.steps.join('・')}で+1、最大${BAL.basic.cap}）／必要：◇1`:`ワザ① 基本攻撃：${pt(w1)}／必要：◇1`,
+   gen?`ワザ② 強攻撃：${BAL.strong.base}から成長（有効エネルギー${BAL.strong.steps.join('・')}で+1、最大${BAL.strong.cap}）／必要：自色1＋◇1`:`ワザ② 強攻撃：${pt(w2)}／必要：自色1＋◇1`,
+   `現在色と同色の実カード${BAL.sameMin}枚以上で攻撃+${BAL.sameBonus}。増強を足してから弱点（6色の相性順）でダメージ×2`];
    if(kind==='field'){rows.push(`ベースカラー：${colorName(base(item))}／現在：${colorName(color)}`);rows.push(`付与エネルギー：実${item.energy.length}枚・有効${energyTotal(item,owner)}枚分（${item.energy.map(n=>NAME[n]).join('・')||'なし'}）`);rows.push(`有効内訳：${energyCounts(item,owner).map((n,i)=>n?NAME[i]+n:'').filter(Boolean).join('・')||'なし'}`)}
- }else if(item.kind==='en')rows=[`色：${NAME[item.color]}`,`1ターンに1枚、前衛または控えに付与できます。`];
+ }else if(item.kind==='en')rows=[`色：${NAME[item.color]}`,`通常枠1枚（前衛または控え）＋控え専用の追加枠1枚を、1ターンに付与できます。補色は付与できません。`];
  else if(item.kind==='boost')rows=[`次の攻撃の威力を＋1します。`,`同じターンの使用は1回まで。`];
- else rows=[`前衛モンスターの属性をこのターンだけ変更します。`,`変更後の色を選択できます。`];
- $('detailContent').innerHTML=`<div class="detail-card">${isMon?`<div class="detail-art"><div class="monster-art-panel" style="background:${artBg(color)}"><img src="${artSrc(item,color)}" alt="${esc(monsterName(item))}"><span class="monster-badge">${colorName(color)}</span></div></div>`:''}<div class="detail-swatch" style="background:${item.kind==='boost'?'#8595a6':colorHex(color)}">${item.kind==='boost'?'+1':colorName(color)}</div>${rows.map(r=>`<div class="detail-line">${esc(r)}</div>`).join('')}</div>`;
+ else rows=[`前衛モンスターの属性をこのターンだけ変更します（ターン終了で元に戻る）。`,`A：前衛に付いているエネルギーの色から選ぶ。B：手札のエネルギー1枚を一緒に使い、その色に変える（そのエネルギーは捨て札）。1ターン1回。`,`カード自体に色はありません。`];
+ $('detailContent').innerHTML=`<div class="detail-card">${!isMon?`<div class="detail-art"><div class="card-art-panel" style="background:${isAux(item)?'linear-gradient(180deg,#a7b4c2,#8595a6)':item.kind==='en'?tintHex(colorHex(color),.82):colorHex(color)}">${cardImg(item)}</div></div>`:''}${isMon?`<div class="detail-art"><div class="monster-art-panel" style="background:${artBg(color)}"><img src="${artSrc(item,color)}" alt="${esc(monsterName(item))}"><span class="monster-badge">${colorName(color)}</span></div></div>`:''}<div class="detail-swatch" style="background:${isAux(item)?'#8595a6':colorHex(color)}">${isAux(item)?(item.kind==='boost'?'+1':'色調整'):colorName(color)}</div>${rows.map(r=>`<div class="detail-line">${esc(r)}</div>`).join('')}</div>`;
  modal(title+'・詳細','表示中はすべての対戦操作が停止します。',[['閉じる',()=>{},false]],false);
 }
 function modal(title,txt,choices,withCancel=true){
@@ -475,15 +723,14 @@ function modal(title,txt,choices,withCancel=true){
  $('overlay').classList.add('show');
 }
 function closeModal(shouldRender=true){$('overlay').classList.remove('show');$('detailContent').replaceChildren();if(shouldRender)render()}
-function colorPopup(fn){modal('色調整：変更後の色','このターンだけ前衛のベースカラーを別の色に変更します。',NAME.map((v,i)=>[v,()=>fn(i),i===base(game.me.active)]))}
 function retreat(preferredIndex=null){
- let p=game.me;if(p.retreated||!p.active?.energy.length||!p.bench.length)return;
- const choices=p.bench.map((c,i)=>[`${colorName(base(c))}（HP${10-c.damage}）`,()=>{
+ let p=game.me;if(swapBlock(p))return;
+ const choices=p.bench.map((c,i)=>[`${monsterName(c)}・${colorName(base(c))}（HP${hpLeft(c)}/${maxHp(c)}）`,()=>{
   modal('捨てるエネルギー','捨てるエネルギーを1枚選んでください。',p.active.energy.map((col,j)=>[`${NAME[col]}（${j+1}枚目）`,()=>{
-   modal('交代の最終確認',`前衛の${NAME[col]}エネルギーを1枚捨てて、${colorName(base(c))}を前衛にしますか？`,[
+   modal('交代の最終確認',`前衛の${NAME[col]}エネルギーを1枚捨てて、${monsterName(c)}を前衛にしますか？（控え行動を1回使います）`,[
     ['交代を確定',()=>{
-     if(p.retreated||!p.active||p.active.energy[j]!==col||p.bench[i]!==c)return;
-     p.active.energy.splice(j,1);let old=p.active;p.active=p.bench[i];p.bench[i]=old;p.retreated=true;p.tuneColor=null;
+     if(swapBlock(p)||p.active.energy[j]!==col||p.bench[i]!==c)return;
+     doSwap(p,i,j);
      fieldSelected=null;selected=null;doMessage('player-front','あなたがエネルギーを1枚捨て、前衛を交代。');
     },false]
    ]);
@@ -506,12 +753,12 @@ function validDrop(ds,pos){
  if(ds.source==='field'){
   const from=Number(ds.key);
   if(from===pos||!monsterAtSlot(from)||!target)return false;
-  return (from===1||pos===1)&&!p.retreated&&!!p.active?.energy.length;
+  return (from===1||pos===1)&&!swapBlock(p);
  }
  const c=p.hand.find(x=>x.id===Number(ds.key));
  if(!c||!canUseHand(c))return false;
  if(c.kind==='mon')return !target&&(pos===1?!p.active:!!p.active&&p.bench.length=== (pos===0?0:1));
- if(c.kind==='en')return !!target&&canAttach(target,c.color,p)&&game.turn==='player';
+ if(c.kind==='en')return !!target&&attachBlock(p,target,c.color)===null&&game.turn==='player';
  return pos===1&&!!p.active&&game.turn==='player';
 }
 function endDragVisual(){
@@ -554,18 +801,13 @@ function runDrop(ds,pos){
  if(c.kind==='mon'){
   if(place(p,c.id,pos===1)){selected=null;fieldSelected=null;doMessage(pos===1?'player-front':'player-bench',`あなたが${pos===1?'前衛':pos===0?'控え①':'控え②'}にモンスターを配置。`)}
  }else if(c.kind==='en'){
-  const target=monsterAtSlot(pos);if(!target||p.attached||!canAttach(target,c.color,p))return;
-  take(p,c.id);target.energy.push(c.color);p.attached=true;selected=null;fieldSelected=null;
-  doMessage(pos===1?'player-front':'player-bench',`あなたが${NAME[c.color]}エネルギーを1枚付与。`);
+  const target=monsterAtSlot(pos);if(attachBlock(p,target,c.color))return;
+  const slot=doAttach(p,target,c);selected=null;fieldSelected=null;
+  doMessage(pos===1?'player-front':'player-bench',`あなたが${pos===1?'前衛':'控え'}に${NAME[c.color]}エネルギーを付与${slot==='extra'?'（控え追加枠）':''}。`);
  }else if(c.kind==='boost'){
-  take(p,c.id);p.boosted=true;p.bonus=1;selected=null;fieldSelected=null;
-  doMessage('player-front','あなたが増強カードを使用。次の攻撃+1。');
+  selected=c.id;openBoostMenu(c);
  }else if(c.kind==='tune'){
-  selected=c.id;colorPopup(n=>{
-   if(!p.hand.some(x=>x.id===c.id)||p.tuned||!p.active?.energy.length)return;
-   take(p,c.id);p.tuned=true;p.tuneColor=n;selected=null;fieldSelected=null;
-   doMessage('player-front',`前衛の属性を一時的に${NAME[n]}へ変更。`);
-  });
+  selected=c.id;openTuneMenu(c);
  }
 }
 function pointerDragStart(e){
@@ -576,12 +818,13 @@ function pointerDragStart(e){
  const source=hand?'hand':'field',key=hand?hand.dataset.dragHand:slot.dataset.slot.split(':')[1];
  const card=hand?game.me.hand.find(x=>x.id===Number(key)):monsterAtSlot(Number(key));
  if(!dragAllowed(source,card))return;
- const label=source==='hand'?`${cardName(card)}・${card.kind==='boost'?'+1':card.kind==='mon'?'無色':NAME[card.color]}`:`${Number(key)===1?'前衛':'控え'}・${colorName(base(card))}`;
+ const label=source==='hand'?(card.kind==='tune'?'色調整':card.kind==='boost'?'増強・A/B':`${cardName(card)}・${card.kind==='mon'?'無色':NAME[card.color]}`):`${Number(key)===1?'前衛':'控え'}・${colorName(base(card))}`;
  dragState={pointerId:e.pointerId,source,key,label,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,active:false};
 }
 function pointerDragMove(e){
  const ds=dragState;if(!ds||ds.pointerId!==e.pointerId)return;
  ds.x=e.clientX;ds.y=e.clientY;
+ if(!ds.active&&ds.source==='hand'&&e.pointerType==='touch'&&Math.abs(ds.x-ds.startX)>8&&Math.abs(ds.x-ds.startX)>Math.abs(ds.y-ds.startY)){dragState=null;return}   // a horizontal swipe on the hand scrolls it; it is not a card drag
  if(!ds.active&&Math.hypot(ds.x-ds.startX,ds.y-ds.startY)>11){
   ds.active=true;startDragVisual(ds,ds.x,ds.y);
  }
@@ -617,5 +860,9 @@ $('playerSlots').addEventListener('click',e=>{
 $('playerSlots').addEventListener('keydown',e=>{
  if(e.key==='Enter'||e.key===' '){let el=e.target.closest('[data-slot]');if(el){e.preventDefault();el.click()}}
 });
+$('victoryTarget').addEventListener('change',e=>{if(game.turn==='setup'&&!notice){game.targetKos=Number(e.target.value);render()}});
+$('startBtn').addEventListener('click',()=>{if(game.turn==='setup'&&game.me.active&&!notice&&!$('overlay').classList.contains('show'))begin()});
+$('logoBtn').addEventListener('click',openRules);
+$('copyResult').addEventListener('click',async()=>{const t=RESULTS.join('\n\n');try{await navigator.clipboard.writeText(t);$('copyNote').textContent='コピーしました'}catch(e){const r=document.createRange();r.selectNodeContents($('resultText'));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);$('copyNote').textContent='選択しました（コピーしてください）'}});
 $('message').addEventListener('click',acknowledge);$('restart').addEventListener('click',()=>modal('最初からやり直しますか？','現在の対戦は破棄されます。',[['やり直す',reset]]));reset();
 </script></body></html>

@@ -144,3 +144,21 @@ for (const [name, viewport] of VIEWS) {
     assert.ok(geo.slot[0] > 80 && geo.hand[0] > 60 && geo.field > 100, JSON.stringify(geo)); assert.deepEqual(errors, []); await ctx.close();
   });
 }
+
+test('hand: with more cards than fit, a horizontal finger swipe scrolls the hand (the off-screen cards become reachable), and a vertical drag onto the field still works', async () => {
+  const { ctx, page, errors } = await openGame(browser, { seed: 309, viewport: { width: 393, height: 851 }, touch: true });
+  await setup(page, { me: { active: { e: [0] }, bench: [], hand: Array.from({ length: 9 }, (_, i) => ({ kind: 'en', color: i % 6 })) }, turn: 'player', step: 1 });
+  const m = await page.evaluate(() => { const h = document.getElementById('hand'); return { sw: h.scrollWidth, cw: h.clientWidth, ta: getComputedStyle(h.querySelector('button')).touchAction }; });
+  assert.ok(m.sw > m.cw + 20, `hand overflows (${m.sw} > ${m.cw})`); assert.equal(m.ta, 'pan-x');
+  const cdp = await ctx.newCDPSession(page);
+  const swipe = async dx => { const box = await page.$eval('#hand', b => { const r = b.getBoundingClientRect(); return { x: r.left + r.width * 0.8, y: r.top + r.height / 2 }; });
+    const send = (type, pt) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pt ? [{ x: pt.x, y: pt.y }] : [] });
+    await send('touchStart', box); for (let i = 1; i <= 15; i++) { await send('touchMove', { x: box.x + dx * i / 15, y: box.y }); await page.waitForTimeout(16); } await send('touchEnd'); await page.waitForTimeout(400); };
+  await swipe(-180);
+  const left = await page.evaluate(() => document.getElementById('hand').scrollLeft);
+  assert.ok(left > 80, `the hand scrolled (scrollLeft ${left})`);
+  for (let i = 0; i < 3; i++) await swipe(-150);
+  assert.equal(await page.$eval('#hand button:last-child', b => { const r = b.getBoundingClientRect(), h = document.getElementById('hand').getBoundingClientRect(); return r.right <= h.right + 1; }), true, 'the last card can be brought fully into view');
+  assert.equal(await page.evaluate(() => game.me.hand.length), 9, 'swiping played no card');
+  assert.deepEqual(errors, []); await ctx.close();
+});

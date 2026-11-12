@@ -180,7 +180,8 @@ body{padding:5px 7px 48px}
 #modalText{font-size:.87rem;color:#d2e2ed;margin:8px 0}
 
 /* v0.12: drag and drop; preserve v0.8/v0.10 field card geometry */
-#hand [data-drag-hand],#playerSlots [data-slot]{touch-action:none;user-select:none;-webkit-user-select:none}
+#playerSlots [data-slot]{touch-action:none;user-select:none;-webkit-user-select:none}
+#hand [data-drag-hand]{touch-action:pan-x;user-select:none;-webkit-user-select:none}   /* horizontal swipe scrolls the hand; vertical movement still starts a drag */
 #dragGhost{position:fixed;z-index:99;pointer-events:none;transform:translate(-50%,-50%);background:#2b455e;border:2px solid #ffe28d;border-radius:12px;padding:16px 12px;min-width:94px;min-height:78px;display:flex;justify-content:center;align-items:center;font-weight:800;box-shadow:0 7px 25px #000b;opacity:.96}
 .drag-valid .bcard,.drag-valid .empty-slot{outline:2px dashed #8ac9ea;outline-offset:2px}
 .drag-target .bcard,.drag-target .empty-slot{outline:4px solid #ffe28d;outline-offset:2px}
@@ -823,6 +824,7 @@ function pointerDragStart(e){
 function pointerDragMove(e){
  const ds=dragState;if(!ds||ds.pointerId!==e.pointerId)return;
  ds.x=e.clientX;ds.y=e.clientY;
+ if(!ds.active&&ds.source==='hand'&&e.pointerType==='touch'&&Math.abs(ds.x-ds.startX)>8&&Math.abs(ds.x-ds.startX)>Math.abs(ds.y-ds.startY)){dragState=null;return}   // a horizontal swipe on the hand scrolls it; it is not a card drag
  if(!ds.active&&Math.hypot(ds.x-ds.startX,ds.y-ds.startY)>11){
   ds.active=true;startDragVisual(ds,ds.x,ds.y);
  }

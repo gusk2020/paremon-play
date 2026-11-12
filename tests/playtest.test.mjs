@@ -11,6 +11,7 @@ import { pathToFileURL } from 'node:url';
 import { ROOT, launch, MOBILE, DESKTOP } from './helpers.mjs';
 
 const SPECIES = ['centipede', 'dragon', 'golem', 'knight', 'skeleton'];
+import { CARD_KEYS } from '../tools/standalone.mjs';
 const sha = process.env.PLAYTEST_SHA || (spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout || '').trim() || '0'.repeat(40);
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'paremon-zip-'));
 const out = path.join(work, 'out'), ex = path.join(work, 'extracted');
@@ -41,11 +42,11 @@ test('ZIP build works with a RELATIVE output folder, exactly as CI calls it (bas
   } finally { fs.rmSync(cwd, { recursive: true, force: true }); }
 });
 
-test('ZIP: index.html, logo and paremon_monsters2/ sit at the top level (no parent folder); exactly 38 files', () => {
+test('ZIP: index.html, logo and paremon_monsters2/ sit at the top level (no parent folder); exactly 47 files (incl. 9 card illustrations in paremon_cards/)', () => {
   const names = sh('unzip', ['-Z1', zip]).trim().split('\n').filter(n => !n.endsWith('/'));
-  const want = ['index.html', 'PLAYTEST.txt', 'paremon_logo_center_crop2.png', ...SPECIES.flatMap(s => [0, 1, 2, 3, 4, 5, 6].map(i => `paremon_monsters2/${s}_${i}.png`))].sort();
-  assert.deepEqual([...names].sort(), want); assert.equal(names.length, 38);
-  assert.equal(sh('unzip', ['-Z1', zip]).split('\n').filter(n => n && !n.endsWith('/') && n.includes('/') && !n.startsWith('paremon_monsters2/')).length, 0);
+  const want = ['index.html', 'PLAYTEST.txt', 'paremon_logo_center_crop2.png', ...SPECIES.flatMap(s => [0, 1, 2, 3, 4, 5, 6].map(i => `paremon_monsters2/${s}_${i}.png`)), ...CARD_KEYS].sort();
+  assert.deepEqual([...names].sort(), want); assert.equal(names.length, 47);
+  assert.equal(sh('unzip', ['-Z1', zip]).split('\n').filter(n => n && !n.endsWith('/') && n.includes('/') && !n.startsWith('paremon_monsters2/') && !n.startsWith('paremon_cards/')).length, 0);
 });
 
 test('ZIP: nothing from development is inside (tests, node_modules, source sheets, docs, git, workflows, skills, package files, secrets)', () => {

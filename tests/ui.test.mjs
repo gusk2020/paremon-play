@@ -16,7 +16,7 @@ for (const [name, viewport] of [['phone 412x892', MOBILE], ['small phone 360x640
     await page.waitForTimeout(300);
     const s = await page.evaluate(() => ({
       enemyCards: document.querySelectorAll('#enemySlots .bcard').length, playerEmpty: document.querySelectorAll('#playerSlots .empty-slot').length,
-      hand: document.querySelectorAll('#hand button').length, imgs: [...document.images].map(i => ({ src: (i.dataset.art || i.getAttribute('src')), ok: i.complete && i.naturalWidth > 0 })),
+      hand: document.querySelectorAll('#hand button').length, imgs: [...document.images].filter(i => !i.classList.contains('card-art')).map(i => ({ src: (i.dataset.art || i.getAttribute('src')), ok: i.complete && i.naturalWidth > 0 })),
       overflowX: document.documentElement.scrollWidth - window.innerWidth, logo: !!document.querySelector('.logo-banner img'),
       title: document.title, opScore: document.getElementById('opScore').textContent }));
     assert.deepEqual(errors, []);

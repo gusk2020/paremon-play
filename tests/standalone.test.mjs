@@ -10,7 +10,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 import { ROOT, launch, MOBILE, DESKTOP } from './helpers.mjs';
-import { build, verify, KEYS, SPECIES } from '../tools/standalone.mjs';
+import { build, verify, KEYS, CARD_KEYS, ALL_KEYS, SPECIES } from '../tools/standalone.mjs';
 
 const sha = process.env.PLAYTEST_SHA || (spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout || '').trim() || '0'.repeat(40);
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'paremon-sa-'));
@@ -29,10 +29,10 @@ test('standalone: one file, phone-sized, valid JS, the build verifier passes aga
   assert.ok(html.includes(`commit ${sha}`), 'commit recorded in the file');
 });
 
-test('standalone: 36 pictures embedded (35 monsters + logo), byte-identical to the repository files; no external reference of any kind', () => {
+test('standalone: 45 pictures embedded (35 monsters + 9 card illustrations + logo), byte-identical to the repository files; no external reference of any kind', () => {
   const table = JSON.parse(html.match(/const EMBED_B64=(\{.*?\});\n/s)[1]);
-  assert.equal(Object.keys(table).length, 35); assert.deepEqual(Object.keys(table).sort(), [...KEYS].sort());
-  for (const k of KEYS) assert.ok(Buffer.from(table[k], 'base64').equals(fs.readFileSync(path.join(ROOT, k))), k);
+  assert.equal(Object.keys(table).length, 44); assert.deepEqual(Object.keys(table).sort(), [...ALL_KEYS].sort());
+  for (const k of ALL_KEYS) assert.ok(Buffer.from(table[k], 'base64').equals(fs.readFileSync(path.join(ROOT, k))), k);
   assert.ok(html.includes('data-art="paremon_logo_center_crop2.png" src="data:image/png;base64,'));
   const rest = html.replace(/const EMBED_B64=\{.*?\};\n/s, '').replace(/data:image\/png;base64,[A-Za-z0-9+/=]+/g, 'DATA');
   assert.ok(!/https?:\/\//i.test(rest)); assert.ok(!/<script[^>]+src=|<link[^>]+href=/i.test(rest)); assert.ok(!/\bsrc="paremon/.test(rest));
@@ -49,6 +49,8 @@ test('standalone: the verifier DETECTS broken builds (missing picture, corrupt p
     'relative <img src>': h => h.replace('<header id="topbar">', '<header id="topbar"><img src="paremon_logo_center_crop2.png">'),
     'external script': h => h.replace('</head>', '<script src="https://cdn.example/x.js"></script></head>'),
     'no logo': h => h.replace(/data-art="paremon_logo_center_crop2\.png" src="data:image\/png;base64,[A-Za-z0-9+/=]+"/, 'src="x"'),
+    'missing card illustration': h => h.replace(`"${CARD_KEYS[2]}":"${JSON.parse(table)[CARD_KEYS[2]]}",`, ''),
+    'cardSrc still path-based': h => h.replace('const cardSrc=c=>EMBED[cardKey(c)]', 'const cardSrc=c=>cardKey(c)'),
     'artSrc still path-based': h => h.replace('const artSrc=(m,c)=>EMBED[artKey(m,c)]', 'const artSrc=(m,c)=>artKey(m,c)'),
   };
   for (const [name, fn] of Object.entries(cases)) { const broken = mutate(fn); assert.notEqual(broken, html, `${name}: mutation did not change the file`); assert.throws(() => verify(broken, ROOT), /verify:/, name); }
@@ -63,7 +65,7 @@ for (const [name, viewport] of [['phone 393x851 (Pixel 7a-like)', { width: 393, 
     await page.waitForFunction(() => document.querySelectorAll('#hand button').length === 5 && [...document.images].every(i => i.complete));
     const g = await page.evaluate(() => ({ imgs: [...document.images].map(i => ({ ok: i.naturalWidth > 0, art: i.dataset.art, scheme: i.src.split(':')[0] })), overflow: document.documentElement.scrollWidth - innerWidth, turn: game.turn }));
     assert.deepEqual(errors, []); assert.ok(g.imgs.length >= 3 && g.imgs.every(i => i.ok), 'all pictures decoded'); assert.ok(g.imgs.every(i => ['blob', 'data'].includes(i.scheme)), 'embedded pictures only');
-    assert.ok(g.imgs.every(i => /^paremon_(logo_center_crop2|monsters2\/[a-z]+_[0-6])\.png$/.test(i.art)), 'every image knows its repository path'); assert.ok(g.overflow <= 0); assert.equal(g.turn, 'setup');
+    assert.ok(g.imgs.every(i => /^paremon_(logo_center_crop2\.png|monsters2\/[a-z]+_[0-6]\.png|cards\/(energy_(red|orange|yellow|green|blue|purple)|boost|tune_[ab])\.png)$/.test(i.art)), 'every image knows its repository path'); assert.ok(g.overflow <= 0); assert.equal(g.turn, 'setup');
     assert.ok(urls.every(u => /^(file:|blob:|data:)/.test(u)) && urls.filter(u => u.startsWith('file:')).length === 1, 'the HTML itself is the only file requested: ' + urls.filter(u => !/^(blob:|data:)/.test(u)).join(' '));
     await ctx.close();
   });

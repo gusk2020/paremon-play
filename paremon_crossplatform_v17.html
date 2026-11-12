@@ -267,11 +267,16 @@ body.dragging #hand{overflow-x:visible}
 /* new card illustrations (energy / colour adjust / boost) */
 .swatch.art{position:relative;overflow:hidden;padding:0}
 .swatch.art .card-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-select:none}
-.swatch.art .card-art{object-fit:cover}.swatch.art.aux-mark .card-art{object-position:50% 58%}
+.swatch.art .card-art{object-fit:cover}.swatch.art.aux-mark .card-art{object-position:50% 50%}
 .swatch.art .art-label{position:absolute;right:2px;bottom:1px;z-index:1;padding:0 4px;border-radius:999px;background:rgba(10,18,28,.78);color:#fff;font-size:.62rem;font-weight:800;line-height:1.3}
 .hand-card .swatch.art{flex:1 1 auto;height:auto;min-height:30px}
 .card-art-panel{position:relative;height:150px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .card-art-panel .card-art{max-width:100%;max-height:100%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
+
+/* field = white plastic watercolour palette (look only; no layout change) */
+.field::before{content:"";position:absolute;inset:0 2px;border-radius:44px 44px 44px 44px / 38px 38px 38px 38px;background:radial-gradient(ellipse at 28% 18%,#ffffff 0,rgba(255,255,255,0) 55%),linear-gradient(180deg,#fbfdff 0%,#eef2f6 55%,#dde4ec 100%);box-shadow:inset 0 2px 3px #fff,inset 0 -5px 9px rgba(120,140,160,.35),0 3px 8px rgba(0,0,0,.45);pointer-events:none;z-index:0}
+.field>.slots{z-index:1}
+.field .empty-slot{color:#5b6f82;border-color:#8ba0b3;background:rgba(255,255,255,.35)}
 </style></head><body>
 <header id="topbar"><button id="logoBtn" class="logo-banner" type="button" aria-label="ルールと仮設定を開く"><img src="paremon_logo_center_crop2.png" alt="パレットモンスター（パレモン）のロゴ"></button><label class="top-victory"><span>勝利条件</span><select id="victoryTarget" aria-label="必要な撃破数"><option value="2">2体撃破</option><option value="3">3体撃破</option><option value="4">4体撃破</option></select></label><button id="startBtn" class="primary" type="button">対戦開始</button></header>
 <div class="proto-tag">バランス試作1／仮設定（確定仕様ではありません）</div>
@@ -457,10 +462,11 @@ function slots(p,side){return [p.bench[0]||null,p.active,p.bench[1]||null].map((
 const isAux=c=>c.kind==='tune'||c.kind==='boost';
 const ENERGY_ART=['red','orange','yellow','green','blue','purple'];
 const cardKey=c=>c.kind==='en'?`paremon_cards/energy_${ENERGY_ART[c.color]}.png`:c.kind==='boost'?'paremon_cards/boost.png':`paremon_cards/tune_${(c.color/2)%2===1?'b':'a'}.png`;const cardSrc=c=>cardKey(c);
+const tintHex=(h,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)*(1-k)+255*k).toString(16).padStart(2,'0')).join('');
 const cardImg=c=>`<img class="card-art" alt="" draggable="false" src="${cardSrc(c)}">`;
 const auxMark=c=>c.kind==='boost'?'+1':'調',auxName=c=>c.kind==='boost'?'増強':'色調整';
 function handView(c){let info=c.kind==='mon'?'HP10／無色':c.kind==='en'?'付与1枚':c.kind==='tune'?'前衛の色変更':'攻撃 +1';if(c.kind==='mon')return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="monster-art-panel" style="background:${artBg(null)}"><img src="${artSrc(c,null)}" alt="${esc(monsterName(c))}"><span class="monster-badge">無色</span></div><strong class="monster-name">${esc(monsterName(c))}</strong><span class="small">${info}</span></div>`;if(isAux(c))return `<div class="hand-card aux ${selected===c.id?'sel':''}"><small>補助</small><div class="swatch aux-mark art" style="background:#8595a6">${cardImg(c)}<span class="art-label">${auxMark(c)}</span></div><strong>${auxName(c)}</strong><span class="small">${info}</span></div>`;
- return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="swatch art" style="background:${COLOR[c.color]}">${cardImg(c)}<span class="art-label">${NAME[c.color]}</span></div><strong>${NAME[c.color]}</strong><span class="small">${info}</span></div>`}
+ return `<div class="hand-card ${selected===c.id?'sel':''}"><small>${cardName(c)}</small><div class="swatch art" style="background:${tintHex(COLOR[c.color],.82)}">${cardImg(c)}<span class="art-label">${NAME[c.color]}</span></div><strong>${NAME[c.color]}</strong><span class="small">${info}</span></div>`}
 function actionLabel(t){let div=document.createElement('div');div.className='action-caption';div.textContent=t;$('actions').append(div)}
 function disabledHint(buttonEl,reason){if(buttonEl.disabled){buttonEl.title=reason;buttonEl.setAttribute('aria-label',buttonEl.textContent+'（使用不可：'+reason+'）')}}
 function action(t,fn,disabled=false,primary=false,reason='現在は使用できません'){let b=button(t,fn,disabled,primary);disabledHint(b,reason);$('actions').append(b);return b}
@@ -626,7 +632,7 @@ function showDetails(item,kind,front=false,owner=game.me){
  }else if(item.kind==='en')rows=[`色：${NAME[item.color]}`,`通常枠1枚（前衛または控え）＋控え専用の追加枠1枚を、1ターンに付与できます。補色は付与できません。`];
  else if(item.kind==='boost')rows=[`次の攻撃の威力を＋1します。`,`同じターンの使用は1回まで。`];
  else rows=[`前衛モンスターの属性をこのターンだけ変更します（ターン終了で元に戻る）。`,`A：前衛に付いているエネルギーの色から選ぶ。B：手札のエネルギー1枚を一緒に使い、その色に変える（そのエネルギーは捨て札）。1ターン1回。`,`カード自体に色はありません。`];
- $('detailContent').innerHTML=`<div class="detail-card">${!isMon?`<div class="detail-art"><div class="card-art-panel" style="background:${isAux(item)?'linear-gradient(180deg,#a7b4c2,#8595a6)':colorHex(color)}">${cardImg(item)}</div></div>`:''}${isMon?`<div class="detail-art"><div class="monster-art-panel" style="background:${artBg(color)}"><img src="${artSrc(item,color)}" alt="${esc(monsterName(item))}"><span class="monster-badge">${colorName(color)}</span></div></div>`:''}<div class="detail-swatch" style="background:${isAux(item)?'#8595a6':colorHex(color)}">${isAux(item)?(item.kind==='boost'?'+1':'色調整'):colorName(color)}</div>${rows.map(r=>`<div class="detail-line">${esc(r)}</div>`).join('')}</div>`;
+ $('detailContent').innerHTML=`<div class="detail-card">${!isMon?`<div class="detail-art"><div class="card-art-panel" style="background:${isAux(item)?'linear-gradient(180deg,#a7b4c2,#8595a6)':item.kind==='en'?tintHex(colorHex(color),.82):colorHex(color)}">${cardImg(item)}</div></div>`:''}${isMon?`<div class="detail-art"><div class="monster-art-panel" style="background:${artBg(color)}"><img src="${artSrc(item,color)}" alt="${esc(monsterName(item))}"><span class="monster-badge">${colorName(color)}</span></div></div>`:''}<div class="detail-swatch" style="background:${isAux(item)?'#8595a6':colorHex(color)}">${isAux(item)?(item.kind==='boost'?'+1':'色調整'):colorName(color)}</div>${rows.map(r=>`<div class="detail-line">${esc(r)}</div>`).join('')}</div>`;
  modal(title+'・詳細','表示中はすべての対戦操作が停止します。',[['閉じる',()=>{},false]],false);
 }
 function modal(title,txt,choices,withCancel=true){

@@ -28,7 +28,7 @@ test('simulation invariants (every turn of 3000 games): each monster is somewher
 
 test('the match gets longer with the knockout target, and the safety net (turn cap) is essentially never needed', () => {
   assert.ok(M[2].meanTurns < M[3].meanTurns && M[3].meanTurns < M[4].meanTurns, [2, 3, 4].map(t => M[t].meanTurns.toFixed(1)).join(' < '));
-  for (const t of [2, 3, 4]) assert.ok(M[t].capRate <= 3, `${t}-KO: cap-decided ${M[t].capRate}%`);
+  for (const t of [2, 3, 4]) assert.ok(M[t].capRate <= 2, `${t}-KO: cap-decided ${M[t].capRate}%`);
 });
 
 test('same piles, same AI: the three modes differ only by the required knockouts (same seeds give the same openings)', async () => {

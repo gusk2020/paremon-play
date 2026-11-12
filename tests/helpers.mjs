@@ -33,7 +33,7 @@ export async function openGame(browser, { seed = 1, viewport = MOBILE, touch = f
 // side spec: { active: {e:[colors], d:damage}|null, bench:[{e,d}], hand:[{kind,color}] }
 export async function setup(page, cfg) {
   await page.evaluate(cfg => {
-    const build = s => s ? Object.assign(mon({ id: ++uid, species: s.sp || 'knight' }), { energy: [...(s.e || [])], damage: s.d || 0 }) : null;
+    const build = s => s ? Object.assign(mon({ id: ++uid, species: s.sp || 'skeleton' }), { energy: [...(s.e || [])], damage: s.d || 0 }) : null;
     for (const side of ['me', 'ai']) {
       const s = cfg[side]; if (!s) continue;
       const p = game[side];
@@ -41,8 +41,8 @@ export async function setup(page, cfg) {
       if ('bench' in s) p.bench = s.bench.map(build);
       if ('hand' in s) p.hand = s.hand.map(h => fresh(h.kind, h.color));
       // every flag is reset first, so no test can inherit state from the previous one
-      Object.assign(p, { kos: 0, tuneColor: null, bonus: 0, attached: false, attachedBench: false, retreated: false, tuned: false, boosted: false });
-      for (const k of ['kos', 'tuneColor', 'bonus', 'attached', 'attachedBench', 'retreated', 'tuned', 'boosted']) if (k in s) p[k] = s[k];
+      Object.assign(p, { kos: 0, tuneColor: null, boostA: false, discard: [], removed: [], attached: false, attachedBench: false, retreated: false, tuned: false, boosted: false });
+      for (const k of ['kos', 'tuneColor', 'boostA', 'attached', 'attachedBench', 'retreated', 'tuned', 'boosted']) if (k in s) p[k] = s[k];
     }
     game.turn = cfg.turn || 'player'; game.step = cfg.step ?? 1;
     if ('targetKos' in cfg) game.targetKos = cfg.targetKos;
@@ -61,7 +61,7 @@ export async function attack(page, who, strong) {
     const ev = attackEvents(p, strong);
     ev.forEach(e => e.fn && e.fn());
     return { texts: ev.map(e => e.text), before, after: t.active ? t.active.damage : null,
-      kos: p.kos, over: game.over, promotion: game.promotion, targetActive: !!t.active, bonus: p.bonus };
+      kos: p.kos, over: game.over, promotion: game.promotion, targetActive: !!t.active, boostA: p.boostA };
   }, [who, strong]);
 }
 

@@ -85,13 +85,13 @@ test('colour adjustment: all cards of the new colour count 2, complements count 
   assert.equal(r.same, true); assert.equal(r.base, R);
 });
 
-test('damage: basic 2 / strong 3, boost +1 is added BEFORE the weakness doubling and then consumed', async () => {
-  await setup(page, { me: { active: { e: [O, G] }, bench: [], bonus: 0 }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
+test('damage: basic 2 / strong 3, boost A (basic +2 / strong +1) is added BEFORE the weakness doubling and then consumed', async () => {
+  await setup(page, { me: { active: { e: [O, G] }, bench: [], boostA: false }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
   let r = await attack(page, 'me', true); assert.equal(r.after - r.before, 6); // 3 × 2
-  await setup(page, { me: { active: { e: [O, G] }, bench: [], bonus: 1 }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
-  r = await attack(page, 'me', true); assert.equal(r.after - r.before, 8); assert.equal(r.bonus, 0); // (3+1) × 2
-  await setup(page, { me: { active: { e: [R] }, bench: [], bonus: 1 }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
-  r = await attack(page, 'me', false); assert.equal(r.after - r.before, 3); // (2+1), neutral
+  await setup(page, { me: { active: { e: [O, G] }, bench: [], boostA: true }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
+  r = await attack(page, 'me', true); assert.equal(r.after - r.before, 8); assert.equal(r.boostA, false); // (3+1) × 2
+  await setup(page, { me: { active: { e: [R] }, bench: [], boostA: true }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
+  r = await attack(page, 'me', false); assert.equal(r.after - r.before, 4); // basic 2 + boost A basic +2, neutral
 });
 
 test('attacking does not consume energy', async () => {
@@ -150,10 +150,10 @@ test('swap: discards exactly 1 chosen energy, once per turn; base colour follows
 });
 
 test('turn flags: attach / tune / boost / swap each limited to once per turn; reset when the next turn starts', async () => {
-  await setup(page, { me: { active: { e: [R] }, bench: [], attached: true, tuned: true, boosted: true, retreated: true, tuneColor: O, bonus: 1 }, ai: { active: { e: [R] }, bench: [] }, turn: 'ai', step: 1 });
+  await setup(page, { me: { active: { e: [R] }, bench: [], attached: true, tuned: true, boosted: true, retreated: true, tuneColor: O, boostA: true }, ai: { active: { e: [R] }, bench: [] }, turn: 'ai', step: 1 });
   await ev(() => afterAi()); // sequence() shows the draw message but flags reset immediately
-  const f = await ev(() => ({ a: game.me.attached, t: game.me.tuned, b: game.me.boosted, r: game.me.retreated, tc: game.me.tuneColor, bo: game.me.bonus }));
-  assert.deepEqual(f, { a: false, t: false, b: false, r: false, tc: null, bo: 0 });
+  const f = await ev(() => ({ a: game.me.attached, t: game.me.tuned, b: game.me.boosted, r: game.me.retreated, tc: game.me.tuneColor, bo: game.me.boostA }));
+  assert.deepEqual(f, { a: false, t: false, b: false, r: false, tc: null, bo: false });
 });
 
 test('end of the player turn restores the original colour (tune is temporary)', async () => {
@@ -170,14 +170,14 @@ test('swap is refused without energy on the front monster or without a bench mon
   assert.equal(await can({ active: { e: [R] }, bench: [{ e: [] }] }), true);
 });
 
-test('species are display-only: the same colour/energy gives the same damage for every species', async () => {
+test('species differ by the MON table: same colour/energy, different damage (basic offset), and the defender HP follows the species', async () => {
   const out = [];
   for (const sp of ['centipede', 'dragon', 'golem', 'knight', 'skeleton']) {
-    await setup(page, { me: { active: { e: [O] }, bench: [] }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });
-    await ev(sp => { game.me.active.species = sp; game.ai.active.species = sp; }, sp);
+    await setup(page, { me: { active: { e: [O, O] }, bench: [] }, ai: { active: { e: [R], sp: 'golem' }, bench: [] }, targetKos: 4 });
+    await ev(sp => { game.me.active.species = sp; }, sp);
     const r = await attack(page, 'me', false); out.push(r.after - r.before);
   }
-  assert.deepEqual(out, [4, 4, 4, 4, 4]);
+  assert.deepEqual(out, [10, 10, 8, 8, 8], 'grown 3 + same 1 + species offset (+1 speed/high-power), x2 weakness');
 });
 
 // ---- KD-6 (user-confirmed spec): only the complement of the TEMPORARY base colour is refused while a colour adjustment is active ----
@@ -249,8 +249,8 @@ test('KD-3: colour adjustment and boost behave identically whatever internal col
   }
   assert.ok(out.every(v => v === true));
   await setup(page, { me: { active: { e: [R] }, bench: [], hand: [{ kind: 'boost', color: 4 }] }, ai: { active: { e: [R] }, bench: [] }, turn: 'player', step: 1 });
-  await ev(() => { useHand(game.me.hand[0]); acknowledge(); });
-  assert.deepEqual(await ev(() => [game.me.bonus, game.me.boosted, game.me.tuneColor]), [1, true, null]);
+  await ev(() => { useHand(game.me.hand[0]); document.querySelector('#modalButtons button').click(); acknowledge(); });   // boost now asks A/B first
+  assert.deepEqual(await ev(() => [game.me.boostA, game.me.boosted, game.me.tuneColor]), [true, true, null]);
 });
 
 
@@ -259,7 +259,7 @@ test('KD-3: colour adjustment and boost behave identically whatever internal col
 // game were REPLACED (not skipped); the differences are listed in docs/SPEC.md "旧仕様との差分".
 // =====================================================================================================================
 const T = 'target';
-const attackOf = (cfg, strong) => ev(([c, strong]) => { const p = game.me; p.active = Object.assign(mon({ id: 900 }), { energy: c.e }); p.tuneColor = c.tune ?? null; p.bonus = c.boost || 0; const w = attackPower(p, strong); return { ...w, cost: cost(p, strong) }; }, [cfg, strong]);
+const attackOf = (cfg, strong) => ev(([c, strong]) => { const p = game.me; p.active = Object.assign(mon({ id: 900 }), { energy: c.e }); p.tuneColor = c.tune ?? null; p.boostA = !!c.boost; const w = attackPower(p, strong); return { ...w, cost: cost(p, strong) }; }, [cfg, strong]);
 
 test('NEW decks: two separate piles — monster pile 12 (monsters only) and growth pile 18 (energy 12 = 2 per colour, 色調整 3, 増強 3); never mixed', async () => {
   const d = await ev(() => { const p = player(); const kinds = a => a.reduce((n, c) => (n[c.kind] = (n[c.kind] || 0) + 1, n), {}); const en = [0, 0, 0, 0, 0, 0]; p.deckG.filter(c => c.kind === 'en').forEach(c => en[c.color]++);
@@ -312,15 +312,15 @@ test('NEW same-colour bonus: 2+ REAL cards of the current colour add +1 (once); 
 });
 
 test('NEW damage order: (grown + same-colour + boost) first, THEN weakness x2; the numbers add up; boost is spent', async () => {
-  await setup(page, { me: { active: { e: [O, O] }, bench: [], bonus: 1 }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });   // 橙 beats 赤
+  await setup(page, { me: { active: { e: [O, O] }, bench: [], boostA: true }, ai: { active: { e: [R] }, bench: [] }, targetKos: 4 });   // 橙 beats 赤
   const r = await attack(page, 'me', false);
-  assert.match(r.texts[0], /基本攻撃：3＋同色1＋増強1 ×弱点2 = 10ダメージ/, 'grown 3 + same 1 + boost 1 = 5, doubled = 10'); assert.equal(r.bonus, 0);
+  assert.match(r.texts[0], /基本攻撃：3＋同色1＋増強2 ×弱点2 = 12ダメージ/, 'grown 3 + same 1 + boost A basic 2 = 6, doubled = 12'); assert.equal(r.boostA, false);
   await setup(page, { me: { active: { e: [R, O, Y, B, P] }, bench: [] }, ai: { active: { e: [R] }, bench: [{ e: [] }] }, targetKos: 4 });                  // 赤 vs 赤: no weakness
   const r2 = await attack(page, 'me', true); assert.equal(r2.after - r2.before, 4, 'strong with effective 5: 4, no pair, no boost');
 });
 
 test('K: how big can one hit get? the maximum is documented (strong 5 + pair 1 + boost 1 = 7, x2 on weakness = 14 >= HP10); the simulation measures how often it happens', async () => {
-  await setup(page, { me: { active: { e: [R, R, R, R] }, bench: [], bonus: 1 }, ai: { active: { e: [P], d: 0 }, bench: [{ e: [] }] }, targetKos: 4 });   // 赤 beats 橙? 赤(0)+... weak when att==def+1 -> def 紫(5)+1=0 => red beats purple
+  await setup(page, { me: { active: { e: [R, R, R, R] }, bench: [], boostA: true }, ai: { active: { e: [P], d: 0 }, bench: [{ e: [] }] }, targetKos: 4 });   // 赤 beats 橙? 赤(0)+... weak when att==def+1 -> def 紫(5)+1=0 => red beats purple
   const a = await ev(() => computeAttack(game.me, game.ai, true));
   assert.deepEqual([a.pw.grown, a.pw.same, a.pw.boost, a.weak, a.dmg], [5, 1, 1, true, 14]);
 });
@@ -448,7 +448,7 @@ test('NEW result summary: finishing a game records mode, winner, turns and the m
   await setup(page, { me: { active: { e: [R, R] }, bench: [], kos: 1 }, ai: { active: { e: [R], d: 9 }, bench: [{ e: [] }] }, targetKos: 2 });
   await attack(page, 'me', false);
   const t = await ev(() => RESULTS[0]);
-  for (const must of ['【2体撃破・バランス試作1】', 'あなたの勝利', '規定数撃破', '最大有効E', '平均付与', '色調整', '一撃撃破', '撃破あたり']) assert.ok(t.includes(must), `result lacks ${must}: ${t}`);
+  for (const must of ['【2体撃破・バランス試作2】', 'あなたの勝利', '規定数撃破', '最大有効E', '平均付与', '色調整', '一撃撃破', '撃破あたり']) assert.ok(t.includes(must), `result lacks ${must}: ${t}`);
 });
 
 test('AI draw policy: needs a monster -> monster pile; otherwise the growth pile; never picks an empty pile', async () => {

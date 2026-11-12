@@ -64,7 +64,8 @@ test('setup rules: the start button stays disabled until a front monster is plac
   await clicksAllowed(page);
   await page.click('#playerSlots [data-slot="player:1"]');
   const b = await modalButtons(page);
-  assert.deepEqual(b.map(x => x.t), ['詳細', 'ワザ①：攻撃2', 'ワザ②：攻撃3', '前衛と控えの交代', '戻る']);
+  assert.deepEqual(b.map(x => x.t.replace(/\d+$/, 'N')), ['詳細', 'ワザ①：攻撃N', 'ワザ②：攻撃N', '前衛と控えの交代（エネルギー1枚を捨てる）', 'ターン終了（攻撃しない）', '戻る']);
+  assert.equal(b.find(x => x.t.startsWith('ターン終了')).d, false, 'a turn may be ended without attacking, including the very first turn');
   assert.ok(b.find(x => x.t.startsWith('ワザ①')).d && b.find(x => x.t.startsWith('ワザ②')).d, 'moves disabled on the very first turn');
   assert.match(await page.textContent('#modalText'), /先攻の最初のターンは攻撃できません/, 'the reason is shown');
   assert.deepEqual(errors, []);
@@ -109,12 +110,12 @@ test('tap: field menu for the front monster / a bench monster / an empty slot / 
   await page.click('#playerSlots [data-slot="player:1"]');
   assert.equal(await page.textContent('#modalTitle'), '前衛の操作');
   const front = await modalButtons(page);
-  assert.deepEqual(front.map(x => x.t), ['詳細', 'ワザ①：攻撃2', 'ワザ②：攻撃3', '前衛と控えの交代', '戻る']);
-  assert.ok(front.every(x => !x.d), 'both moves and the swap are usable with 2 energy');
+  assert.deepEqual(front.map(x => x.t), ['詳細', 'ワザ①：攻撃2', 'ワザ②：攻撃3', '前衛と控えの交代（エネルギー1枚を捨てる）', 'ターン終了（攻撃しない）', '戻る']);
+  assert.ok(front.every(x => !x.d), 'both moves, the swap and 終了 are usable with 2 energy');
   await page.click('#modalButtons button:has-text("戻る")');
   await page.click('#playerSlots [data-slot="player:0"]');
   assert.equal(await page.textContent('#modalTitle'), '控え①の操作');
-  assert.deepEqual((await modalButtons(page)).map(x => x.t), ['詳細', '前衛と交代', '戻る']);
+  assert.deepEqual((await modalButtons(page)).map(x => x.t.slice(0, 7)), ['詳細', '前衛と交代（前衛', '手札へ戻す（こ', 'エネルギー全回収', '戻る'].map(x => x.slice(0, 7)));
   await page.click('#modalButtons button:has-text("戻る")');
   await page.click('#playerSlots [data-slot="player:2"]');
   assert.equal(await page.textContent('#modalTitle'), '空きスロット');
@@ -159,8 +160,11 @@ test('mouse drag (desktop): monster -> front, monster -> bench, energy -> monste
   await mouseDrag(page, dragHand(h[2]), '#playerSlots [data-slot="player:1"]');   // both slots used: a third card is refused
   await mouseDrag(page, dragHand(h[2]), '#playerSlots [data-slot="player:0"]');
   assert.deepEqual(await page.evaluate(() => [game.me.active.energy.length, game.me.bench[0].energy.length, game.me.hand.length]), [1, 1, 2]);
-  await mouseDrag(page, dragHand(h[3]), '#playerSlots [data-slot="player:1"]'); await ack(page);
-  assert.deepEqual(await page.evaluate(() => [game.me.bonus, game.me.boosted]), [1, true]);
+  await mouseDrag(page, dragHand(h[3]), '#playerSlots [data-slot="player:1"]');
+  assert.match(await page.textContent('#modalTitle'), /増強：効果を選ぶ/, 'dropping the boost card opens the A/B choice (nothing is consumed yet)');
+  assert.equal(await page.evaluate(() => game.me.boosted), false);
+  await page.click('#modalButtons button:has-text("A：")'); await ack(page);
+  assert.deepEqual(await page.evaluate(() => [game.me.boostA, game.me.boosted]), [true, true]);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -270,13 +274,13 @@ test('pictures: a monster is drawn with its colour variant (none -> _0, 赤..紫
   const ok = async () => { await page.waitForFunction(() => { const i = document.querySelector('#playerSlots [data-slot="player:1"] img'); return i && i.complete; });   // wait for the load to FINISH (a broken image finishes with width 0 and still fails below)
     return page.$eval('#playerSlots [data-slot="player:1"] img', i => i.naturalWidth > 0); };
   await setup(page, { me: { active: { e: [] }, bench: [] }, turn: 'player', step: 1 });
-  assert.equal(await src(), 'paremon_monsters2/knight_0.png');
+  assert.equal(await src(), 'paremon_monsters2/skeleton_0.png');
   for (let c = 0; c < 6; c++) {
     await setup(page, { me: { active: { e: [c] }, bench: [] }, turn: 'player', step: 1 });
-    assert.equal(await src(), `paremon_monsters2/knight_${c + 1}.png`); assert.equal(await ok(), true);
+    assert.equal(await src(), `paremon_monsters2/skeleton_${c + 1}.png`); assert.equal(await ok(), true);
   }
   await setup(page, { me: { active: { e: [0] }, bench: [], tuneColor: 4 }, turn: 'player', step: 1 });
-  assert.equal(await src(), 'paremon_monsters2/knight_5.png', 'temporary 青 shows the blue picture');
+  assert.equal(await src(), 'paremon_monsters2/skeleton_5.png', 'temporary 青 shows the blue picture');
   await ctx.close();
 });
 
@@ -285,13 +289,15 @@ test('NEW empty piles (replaces the old deck-out loss): both of the AI\'s piles 
   const { ctx, page, errors } = await openGame(browser, { seed: 91, viewport: DESKTOP });
   await setup(page, { me: { active: { e: [0] }, bench: [] }, ai: { active: { e: [0] }, bench: [] }, turn: 'player', step: 1 });
   await page.evaluate(() => { game.ai.deckM = []; game.ai.deckG = []; });
-  await page.click('#turnControl button'); await page.click('#modalButtons button:has-text("ターン終了")');
+  await endTurnUI(page);
   const seen = []; for (let i = 0; i < 20; i++) { const t = await page.evaluate(() => document.getElementById('message').classList.contains('show') ? document.getElementById('messageText').textContent : null); if (t === null) break; seen.push(t); await page.click('#message'); }
   assert.ok(seen.some(t => /相手のターン。引ける山札がない/.test(t)), seen.join(' / '));
   assert.equal(await page.evaluate(() => game.over), false);
   await page.waitForFunction(() => document.getElementById('overlay').classList.contains('show') && /山札を選んで1枚引く/.test(document.getElementById('modalTitle').textContent));
   assert.deepEqual(errors, []); await ctx.close();
 });
+// the only way to end a turn without attacking: tap the own front monster -> menu -> ターン終了 -> confirm
+async function endTurnUI(page) { await page.click('#playerSlots [data-slot="player:1"]'); await page.click('#modalButtons button:has-text("ターン終了（攻撃しない）")'); await page.click('#modalButtons button:text-is("ターン終了")'); }
 async function ack1(page, re) { // click one message at a time until the one matching `re` has been acknowledged
   for (let i = 0; i < 12; i++) { const t = await page.evaluate(() => document.getElementById('message').classList.contains('show') ? document.getElementById('messageText').textContent : null);
     if (t === null) return; const hit = re.test(t); await page.click('#message'); if (hit) return; }
@@ -304,7 +310,7 @@ test('real taps: attack win (target reached), refill-impossible loss for the opp
   assert.match(await page.textContent('#messageText'), /ダメージ/); await page.click('#message');
   assert.match(await page.textContent('#messageText'), /あなたが1体撃破！ 2\/2/); await page.click('#message');
   assert.match(await page.textContent('#messageText'), /あなたの勝利！ 2体撃破/); assert.equal(await page.evaluate(() => game.over), true);
-  assert.equal(await page.isVisible('#resultPanel'), true); assert.match(await page.textContent('#resultText'), /【2体撃破・バランス試作1】あなたの勝利（規定数撃破）/);
+  assert.equal(await page.isVisible('#resultPanel'), true); assert.match(await page.textContent('#resultText'), /【2体撃破・バランス試作2】あなたの勝利（規定数撃破）/);
   await page.click('#message'); assert.equal(await page.evaluate(() => game.turn), 'setup');
   assert.equal(await page.isVisible('#resultPanel'), true, 'the last results stay visible after the restart (for comparing modes)');
   // opponent cannot refill: no bench, no monster in hand, monster pile empty
@@ -448,7 +454,7 @@ for (const [name, viewport] of HEADER_VIEWPORTS) {
     const r = await page.evaluate(() => [...document.querySelectorAll('#enemySlots .bcard,#playerSlots .bcard')].map(c => ({ text: c.textContent, aria: c.getAttribute('aria-label'), art: c.querySelector('.monster-art-panel').getBoundingClientRect().height, name: c.querySelector('.monster-name').getBoundingClientRect().height, hp: c.querySelector('.hp').textContent, en: c.querySelector('.energy').getBoundingClientRect().height })));
     assert.equal(r.length, 5);
     for (const c of r) { assert.ok(!/前衛|控え/.test(c.text), `card text still has the lane wording: ${c.text}`); assert.ok(/前衛|控え/.test(c.aria), 'screen-reader label keeps the lane');
-      assert.ok(c.art >= (viewport.width >= 800 ? 78 : 80), `picture panel ${c.art}px (it was 69-71px on phones before)`); assert.ok(c.name >= 12 && c.en >= 11, 'text lines readable'); assert.match(c.hp, /HP \d+\/10/); }
+      assert.ok(c.art >= (viewport.width >= 800 ? 78 : 80), `picture panel ${c.art}px (it was 69-71px on phones before)`); assert.ok(c.name >= 12 && c.en >= 11, 'text lines readable'); assert.match(c.hp, /HP \d+\/\d+/); }
     await ctx.close();
   });
   test(`lane captions (${name}): one shared row 「控え　前衛　控え」 in the central band, each centred exactly over its column`, async () => {
@@ -562,11 +568,11 @@ test('draw modal: when both piles are empty nothing is drawn and the turn simply
   await ctx.close();
 });
 
-test('prototype label and rules: 「バランス試作1／仮設定」 is visible on screen and in the rules dialog (confirmed directions vs provisional numbers vs rule changes)', async () => {
+test('prototype label and rules: 「バランス試作2／仮設定」 is visible on screen and in the rules dialog (confirmed directions vs provisional numbers vs rule changes)', async () => {
   const { ctx, page } = await openGame(browser, { seed: 203, viewport: MOBILE });
-  assert.match(await page.textContent('.proto-tag'), /バランス試作1／仮設定（確定仕様ではありません）/); assert.equal(await page.isVisible('.proto-tag'), true);
+  assert.match(await page.textContent('.proto-tag'), /バランス試作2／仮設定（確定仕様ではありません）/); assert.equal(await page.isVisible('.proto-tag'), true);
   await page.click('#logoBtn'); const txt = await page.textContent('#detailContent');
-  for (const must of ['バランス試作1（仮設定）', '確定した方向性', '仮ルール（数値・細則）', 'モンスター山札12枚と育成山札18枚', '追加で1枚引き', '有効エネルギー3と5で+1、最大4', '有効エネルギー4と6で+1、最大5', '同色', '控え専用の追加枠', '色調整は1ターン1回', 'A＝', 'B＝', '補充不能', '旧：早期決着', '旧：引けないと敗北', '40ターン', 'Git履歴']) assert.ok(txt.includes(must), `rules text lacks: ${must}`);
+  for (const must of ['バランス試作2（仮設定）', '確定事項', 'モンスター（仮）', 'ムカデ＝速攻', 'ドラゴン＝高火力', '山札と攻撃（仮）', 'モンスター山札12枚と育成山札18枚', '追加で1枚', '基本は3と5で+1・最大4', '強は4と6で+1・最大5', '同色', '控え専用の追加枠', '色調整は1ターン1回', 'A＝', 'B＝', '増強（1種類', '手札へ戻す', 'エネルギー全回収', '合計で1ターン1回', '補充不能', '40ターン', 'Git履歴', 'ターン終了']) assert.ok(txt.includes(must), `rules text lacks: ${must}`);
   await ctx.close();
 });
 
@@ -580,7 +586,7 @@ test('result panel: shown after a finished match with the mode and indicators, k
   assert.equal(await page.isVisible('#resultPanel'), true);
   const txt = await page.textContent('#resultText'); assert.ok(txt.indexOf('【3体撃破') < txt.indexOf('【2体撃破'), 'newest first'); assert.match(txt, /最大有効E\d+／平均付与/);
   await page.evaluate(() => { navigator.clipboard.writeText = async t => { window.__copied = t; }; });
-  await page.click('#copyResult'); assert.equal((await page.evaluate(() => window.__copied)).includes('【2体撃破・バランス試作1】'), true); assert.equal(await page.textContent('#copyNote'), 'コピーしました');
+  await page.click('#copyResult'); assert.equal((await page.evaluate(() => window.__copied)).includes('【2体撃破・バランス試作2】'), true); assert.equal(await page.textContent('#copyNote'), 'コピーしました');
   await ctx.close();
 });
 

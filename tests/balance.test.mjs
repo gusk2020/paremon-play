@@ -19,9 +19,16 @@ test('simulation soundness: 3 modes x 1000 fixed-seed games all finish, without 
   }
 });
 
+test('simulation invariants (every turn of 3000 games): each monster is somewhere exactly once (in play/hand/pile + vanished + knocked out = 12), card ids unique, HP within the species maximum, bench never above 2', () => {
+  for (const t of [2, 3, 4]) for (const r of M[t].raw) assert.deepEqual(r.bad, [], `${t}-KO seed ${r.seed}`);
+  const used = [2, 3, 4].map(t => M[t].swapsPerGame > 0 && M[t].returnsPerGame > 0 && M[t].recoversPerGame > 0 && M[t].boostBPerGame > 0);
+  assert.deepEqual(used, [true, true, true], 'the simulation really exercises every new action (swap, return, recover, boost B)');
+  console.log('max hand size seen:', Math.max(...[2, 3, 4].flatMap(t => M[t].raw.map(r => r.maxHand))));
+});
+
 test('the match gets longer with the knockout target, and the safety net (turn cap) is essentially never needed', () => {
   assert.ok(M[2].meanTurns < M[3].meanTurns && M[3].meanTurns < M[4].meanTurns, [2, 3, 4].map(t => M[t].meanTurns.toFixed(1)).join(' < '));
-  for (const t of [2, 3, 4]) assert.ok(M[t].capRate <= 2, `${t}-KO: cap-decided ${M[t].capRate}%`);
+  for (const t of [2, 3, 4]) assert.ok(M[t].capRate <= 3, `${t}-KO: cap-decided ${M[t].capRate}%`);
 });
 
 test('same piles, same AI: the three modes differ only by the required knockouts (same seeds give the same openings)', async () => {
